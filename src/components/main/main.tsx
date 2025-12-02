@@ -1586,6 +1586,7 @@ export const Main = (props: Props) => {
 									clientId={connectionSettings.clientId}
 									isDm={roomSync.isDm}
 									heroClaims={roomSync.heroClaims}
+									clientNames={roomSync.clientNames}
 									claimHero={props.dataService.claimHero.bind(props.dataService)}
 									releaseHeroClaim={props.dataService.releaseHeroClaim.bind(props.dataService)}
 								/>

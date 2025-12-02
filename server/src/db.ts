@@ -25,6 +25,11 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS client_names (
+    client_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+  );
 `);
 
 // Prepared statements for better performance
@@ -61,6 +66,14 @@ const upsertRoomStateStmt = db.prepare(`
   ON CONFLICT(key) DO UPDATE SET value = excluded.value
 `);
 
+const getClientNameStmt = db.prepare('SELECT name FROM client_names WHERE client_id = ?');
+const getAllClientNamesStmt = db.prepare('SELECT client_id, name FROM client_names');
+const upsertClientNameStmt = db.prepare(`
+  INSERT INTO client_names (client_id, name)
+  VALUES (?, ?)
+  ON CONFLICT(client_id) DO UPDATE SET name = excluded.name
+`);
+
 export interface GameData {
   data: string;
   version: number;
@@ -69,6 +82,11 @@ export interface GameData {
 export interface HeroClaim {
   heroId: string;
   clientId: string;
+}
+
+export interface ClientName {
+  clientId: string;
+  name: string;
 }
 
 export const database = {
@@ -142,6 +160,22 @@ export const database = {
   resetRoom(): void {
     db.exec('DELETE FROM hero_claims');
     db.exec('DELETE FROM room_state');
+    db.exec('DELETE FROM client_names');
+  },
+
+  // Client name operations
+  getClientName(clientId: string): string | null {
+    const row = getClientNameStmt.get(clientId) as { name: string } | undefined;
+    return row?.name ?? null;
+  },
+
+  getAllClientNames(): ClientName[] {
+    const rows = getAllClientNamesStmt.all() as { client_id: string; name: string }[];
+    return rows.map(row => ({ clientId: row.client_id, name: row.name }));
+  },
+
+  setClientName(clientId: string, name: string): void {
+    upsertClientNameStmt.run(clientId, name);
   }
 };
 

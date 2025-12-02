@@ -52,11 +52,15 @@ export class DataService {
 		return this.jwt;
 	}
 
-	private getRoomHeaders() {
-		return {
+	private getRoomHeaders(includeName = false) {
+		const headers: Record<string, string> = {
 			'x-client-id': this.settings.clientId || '',
 			'Content-Type': 'application/json'
 		};
+		if (includeName && this.settings.playerName) {
+			headers['x-client-name'] = this.settings.playerName;
+		}
+		return headers;
 	}
 
 	private async getLocalOrWarehouse<T>(key: string): Promise<T | null> {
@@ -184,22 +188,39 @@ export class DataService {
 
 	// Room Server specific methods
 
-	async connectToRoomServer(): Promise<{ clientId: string; role: 'dm' | 'player' }> {
+	async connectToRoomServer(): Promise<{ clientId: string; role: 'dm' | 'player'; name: string | null }> {
 		if (!this.settings.useRoomServer) {
 			throw new Error('Room server is not enabled');
 		}
 
 		try {
 			const response = await axios.get(`${this.settings.roomServerHost}/connect`, {
-				headers: this.getRoomHeaders()
+				headers: this.getRoomHeaders(true)
 			});
 			return {
 				clientId: response.data.clientId,
-				role: response.data.role
+				role: response.data.role,
+				name: response.data.name
 			};
 		} catch (error) {
 			console.error('Error connecting to Room Server', error);
 			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async getClientNames(): Promise<{ clientId: string; name: string }[]> {
+		if (!this.settings.useRoomServer) {
+			return [];
+		}
+
+		try {
+			const response = await axios.get(`${this.settings.roomServerHost}/names`, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data.names || [];
+		} catch (error) {
+			console.error('Error getting client names', error);
+			return [];
 		}
 	}
 

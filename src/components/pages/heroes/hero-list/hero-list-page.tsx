@@ -39,6 +39,7 @@ interface Props {
 	clientId?: string;
 	isDm?: boolean;
 	heroClaims?: Map<string, string>;
+	clientNames?: Map<string, string>;
 	claimHero?: (heroId: string) => Promise<boolean>;
 	releaseHeroClaim?: (heroId: string) => Promise<boolean>;
 }
@@ -81,13 +82,22 @@ export const HeroListPage = (props: Props) => {
 		if (!ownerId) return null;
 
 		const isOwned = ownerId === props.clientId;
+		const ownerName = props.clientNames?.get(ownerId);
+
+		let label = 'Claimed';
+		if (isOwned) {
+			label = 'Yours';
+		} else if (ownerName) {
+			label = `${ownerName}'s`;
+		}
+
 		return (
 			<Tag
 				icon={<UserOutlined />}
 				color={isOwned ? 'green' : 'default'}
 				style={{ marginLeft: '8px' }}
 			>
-				{isOwned ? 'Yours' : 'Claimed'}
+				{label}
 			</Tag>
 		);
 	};

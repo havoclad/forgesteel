@@ -8,4 +8,5 @@ export interface ConnectionSettings {
 	roomServerHost: string;
 	clientId?: string;
 	role?: 'dm' | 'player';
+	playerName?: string;
 }

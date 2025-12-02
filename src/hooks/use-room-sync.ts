@@ -5,6 +5,7 @@ import { HeroClaim } from '@/utils/data-service';
 export interface RoomClient {
 	id: string;
 	role: 'dm' | 'player';
+	name: string | null;
 	connectedAt: string;
 }
 
@@ -12,7 +13,13 @@ export interface RoomSyncState {
 	isConnected: boolean;
 	clients: RoomClient[];
 	heroClaims: Map<string, string>; // heroId -> clientId
+	clientNames: Map<string, string>; // clientId -> name
 	lastDataChange: { key: string; version: number } | null;
+}
+
+interface ClientName {
+	clientId: string;
+	name: string;
 }
 
 interface WebSocketMessage {
@@ -22,6 +29,7 @@ interface WebSocketMessage {
 	heroId?: string;
 	clientId?: string | null;
 	claims?: HeroClaim[];
+	clientNames?: ClientName[];
 	clients?: RoomClient[];
 	list?: RoomClient[];
 }
@@ -33,6 +41,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		isConnected: false,
 		clients: [],
 		heroClaims: new Map(),
+		clientNames: new Map(),
 		lastDataChange: null
 	});
 
@@ -75,10 +84,15 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 								message.claims?.forEach(claim => {
 									newClaims.set(claim.heroId, claim.clientId);
 								});
+								const newNames = new Map<string, string>();
+								message.clientNames?.forEach(cn => {
+									newNames.set(cn.clientId, cn.name);
+								});
 								return {
 									...prev,
 									clients: message.clients || [],
-									heroClaims: newClaims
+									heroClaims: newClaims,
+									clientNames: newNames
 								};
 							});
 							break;
@@ -117,18 +131,33 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 							break;
 
 						case 'clients':
-							// Client list updated
-							setState(prev => ({
-								...prev,
-								clients: message.list || []
-							}));
+							// Client list updated - also update names from all known clients
+							setState(prev => {
+								const newNames = new Map(prev.clientNames);
+								// Add names from connected clients
+								message.list?.forEach(client => {
+									if (client.name) {
+										newNames.set(client.id, client.name);
+									}
+								});
+								// Add names from full clientNames list (includes disconnected clients)
+								message.clientNames?.forEach(cn => {
+									newNames.set(cn.clientId, cn.name);
+								});
+								return {
+									...prev,
+									clients: message.list || [],
+									clientNames: newNames
+								};
+							});
 							break;
 
 						case 'room_reset':
-							// Room was reset - clear claims
+							// Room was reset - clear claims and names
 							setState(prev => ({
 								...prev,
-								heroClaims: new Map()
+								heroClaims: new Map(),
+								clientNames: new Map()
 							}));
 							break;
 
@@ -178,6 +207,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				isConnected: false,
 				clients: [],
 				heroClaims: new Map(),
+				clientNames: new Map(),
 				lastDataChange: null
 			});
 		}
@@ -226,6 +256,18 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		return state.heroClaims.get(heroId) || null;
 	}, [state.heroClaims]);
 
+	// Get the display name for a client
+	const getClientName = useCallback((clientId: string) => {
+		return state.clientNames.get(clientId) || null;
+	}, [state.clientNames]);
+
+	// Get the owner's name for a hero
+	const getHeroOwnerName = useCallback((heroId: string) => {
+		const ownerId = state.heroClaims.get(heroId);
+		if (!ownerId) return null;
+		return state.clientNames.get(ownerId) || null;
+	}, [state.heroClaims, state.clientNames]);
+
 	// Check if current user can edit a hero
 	const canEditHero = useCallback((heroId: string) => {
 		if (!settings.useRoomServer) return true; // Local mode - can edit all
@@ -239,6 +281,8 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		onDataChange,
 		ownsHero,
 		getHeroOwner,
+		getClientName,
+		getHeroOwnerName,
 		canEditHero,
 		isDm: settings.role === 'dm',
 		clientId: settings.clientId

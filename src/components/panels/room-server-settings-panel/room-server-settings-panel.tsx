@@ -38,6 +38,13 @@ export const RoomServerSettingsPanel = (props: Props) => {
 		setConnectionSettingsChanged(true);
 	};
 
+	const setPlayerName = (value: string) => {
+		const copy = Utils.copy(connectionSettings);
+		copy.playerName = value;
+		setConnectionSettings(copy);
+		setConnectionSettingsChanged(true);
+	};
+
 	// Normalize the host URL to ensure it has http:// prefix
 	const getNormalizedHost = () => {
 		let host = connectionSettings.roomServerHost.trim();
@@ -135,6 +142,17 @@ export const RoomServerSettingsPanel = (props: Props) => {
 			{
 				connectionSettings.useRoomServer ?
 					<>
+						<HeaderText>Your Name</HeaderText>
+						<Input
+							placeholder='Enter your name'
+							allowClear={true}
+							value={connectionSettings.playerName || ''}
+							onChange={e => setPlayerName(e.target.value)}
+						/>
+						<div className='ds-text' style={{ fontSize: '12px', opacity: 0.7 }}>
+							This name will be shown to other players when you claim a hero
+						</div>
+
 						<HeaderText>Server Address</HeaderText>
 						<Input
 							placeholder='http://192.168.1.100:3001'
@@ -152,6 +170,7 @@ export const RoomServerSettingsPanel = (props: Props) => {
 									{connectionSettings.role === 'dm' ? 'Director' : 'Player'}
 								</Tag>
 								<span className='ds-text' style={{ fontSize: '12px' }}>
+									{connectionSettings.playerName ? `${connectionSettings.playerName} - ` : ''}
 									ID: {connectionSettings.clientId?.substring(0, 8)}...
 								</span>
 							</Flex>

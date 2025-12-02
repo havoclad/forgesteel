@@ -7,7 +7,7 @@ import { networkInterfaces } from 'os';
 import database from './db.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -16,6 +16,7 @@ app.use(express.json({ limit: '50mb' }));
 interface Client {
   id: string;
   role: 'dm' | 'player';
+  name: string | null;
   ws: WebSocket;
   connectedAt: Date;
 }
@@ -37,9 +38,11 @@ function broadcastClientList() {
   const clientList = Array.from(clients.values()).map(c => ({
     id: c.id,
     role: c.role,
+    name: c.name,
     connectedAt: c.connectedAt.toISOString()
   }));
-  broadcast({ type: 'clients', list: clientList });
+  // Include all known names (not just connected clients) so claimed heroes show owner names
+  broadcast({ type: 'clients', list: clientList, clientNames: database.getAllClientNames() });
 }
 
 // REST Endpoints
@@ -52,6 +55,7 @@ app.get('/health', (_req, res) => {
 // Connect - get client ID and role
 app.get('/connect', (req, res) => {
   const existingClientId = req.headers['x-client-id'] as string | undefined;
+  const clientName = req.headers['x-client-name'] as string | undefined;
   let clientId = existingClientId || uuidv4();
 
   // Determine role
@@ -68,7 +72,21 @@ app.get('/connect', (req, res) => {
     role = 'player';
   }
 
-  res.json({ clientId, role });
+  // Store/update client name if provided
+  if (clientName) {
+    database.setClientName(clientId, clientName);
+  }
+
+  // Get current name (might have been set previously)
+  const name = database.getClientName(clientId);
+
+  res.json({ clientId, role, name });
+});
+
+// Get all client names
+app.get('/names', (_req, res) => {
+  const names = database.getAllClientNames();
+  res.json({ names });
 });
 
 // Get data by key
@@ -203,24 +221,29 @@ wss.on('connection', (ws, req) => {
 
   const dmClientId = database.getDmClientId();
   const role: 'dm' | 'player' = clientId === dmClientId ? 'dm' : 'player';
+  const name = database.getClientName(clientId);
 
   const client: Client = {
     id: clientId,
     role,
+    name,
     ws,
     connectedAt: new Date()
   };
 
   clients.set(clientId, client);
-  console.log(`Client connected: ${clientId} (${role})`);
+  const displayName = name ? `${name} (${clientId.substring(0, 8)}...)` : clientId.substring(0, 8) + '...';
+  console.log(`Client connected: ${displayName} (${role})`);
 
-  // Send current claims and client list
+  // Send current claims, client list, and client names
   ws.send(JSON.stringify({
     type: 'init',
     claims: database.getAllClaims(),
+    clientNames: database.getAllClientNames(),
     clients: Array.from(clients.values()).map(c => ({
       id: c.id,
       role: c.role,
+      name: c.name,
       connectedAt: c.connectedAt.toISOString()
     }))
   }));
@@ -274,7 +297,9 @@ function getNetworkAddresses(): string[] {
   const addresses: string[] = [];
 
   for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
+    const netList = nets[name];
+    if (!netList) continue;
+    for (const net of netList) {
       // Skip internal and non-IPv4 addresses
       if (net.family === 'IPv4' && !net.internal) {
         addresses.push(net.address);
@@ -310,44 +335,6 @@ server.listen(PORT, '0.0.0.0', () => {
 
   console.log();
   console.log(`  ${colors.dim}Clients connect using the Network address above${colors.reset}`);
-  console.log();
-  console.log(`  ${colors.yellow}Shortcuts${colors.reset}`);
-  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}r${colors.reset} ${colors.dim}to reset room (clear DM and claims)${colors.reset}`);
-  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}c${colors.reset} ${colors.dim}to show connected clients${colors.reset}`);
-  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}q${colors.reset} ${colors.dim}to quit${colors.reset}`);
+  console.log(`  ${colors.dim}Press Ctrl+C to stop the server${colors.reset}`);
   console.log();
 });
-
-// Handle keyboard input for shortcuts
-if (process.stdin.isTTY) {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.on('data', (key) => {
-    const char = key.toString();
-
-    if (char === 'q' || char === '\u0003') { // q or Ctrl+C
-      console.log('\nShutting down...');
-      process.exit(0);
-    }
-
-    if (char === 'r') {
-      database.resetRoom();
-      console.log(`${colors.yellow}Room reset${colors.reset} - DM and all claims cleared`);
-    }
-
-    if (char === 'c') {
-      const clientList = Array.from(clients.values());
-      console.log();
-      console.log(`${colors.cyan}Connected clients: ${clientList.length}${colors.reset}`);
-      if (clientList.length === 0) {
-        console.log(`  ${colors.dim}No clients connected${colors.reset}`);
-      } else {
-        for (const client of clientList) {
-          const roleColor = client.role === 'dm' ? colors.yellow : colors.cyan;
-          console.log(`  ${roleColor}${client.role.toUpperCase()}${colors.reset} ${client.id.substring(0, 8)}...`);
-        }
-      }
-      console.log();
-    }
-  });
-}
