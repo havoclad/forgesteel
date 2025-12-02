@@ -20,7 +20,9 @@ vi.mock('localforage');
 const useLocalSettings: ConnectionSettings = {
 	useWarehouse: false,
 	warehouseHost: '',
-	warehouseToken: ''
+	warehouseToken: '',
+	useRoomServer: false,
+	roomServerHost: ''
 };
 
 const mockOptions = {} as Options;
@@ -88,7 +90,9 @@ describe('DataService', () => {
 			const connSettings: ConnectionSettings = {
 				useWarehouse: true,
 				warehouseHost: 'http://test-fake-host',
-				warehouseToken: 'abcd123'
+				warehouseToken: 'abcd123',
+				useRoomServer: false,
+				roomServerHost: ''
 			};
 
 			const catchFn = vi.fn();
@@ -140,7 +144,9 @@ describe('DataService', () => {
 			const connSettings: ConnectionSettings = {
 				warehouseHost: 'fake-host',
 				useWarehouse: true,
-				warehouseToken: 'abcd123'
+				warehouseToken: 'abcd123',
+				useRoomServer: false,
+				roomServerHost: ''
 			};
 
 			const catchFn = vi.fn();

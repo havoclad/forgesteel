@@ -1,5 +1,5 @@
-import { Button, Divider, Input, Popover, Space, Tabs, Upload } from 'antd';
-import { DownOutlined, DownloadOutlined, PlusOutlined, SearchOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { Button, Divider, Input, Popover, Space, Tabs, Tag, Upload } from 'antd';
+import { DownOutlined, DownloadOutlined, PlusOutlined, SearchOutlined, ThunderboltOutlined, UserOutlined } from '@ant-design/icons';
 import { AppFooter } from '@/components/panels/app-footer/app-footer';
 import { AppHeader } from '@/components/panels/app-header/app-header';
 import { Collections } from '@/utils/collections';
@@ -34,6 +34,13 @@ interface Props {
 	addHero: (folder: string) => void;
 	importHero: (hero: Hero, folder: string) => void;
 	showParty: (folder: string) => void;
+	// Room sync props for multiplayer
+	isRoomServerEnabled?: boolean;
+	clientId?: string;
+	isDm?: boolean;
+	heroClaims?: Map<string, string>;
+	claimHero?: (heroId: string) => Promise<boolean>;
+	releaseHeroClaim?: (heroId: string) => Promise<boolean>;
 }
 
 export const HeroListPage = (props: Props) => {
@@ -67,6 +74,79 @@ export const HeroListPage = (props: Props) => {
 			], searchTerm));
 	};
 
+	const getOwnershipBadge = (heroId: string) => {
+		if (!props.isRoomServerEnabled || !props.heroClaims) return null;
+
+		const ownerId = props.heroClaims.get(heroId);
+		if (!ownerId) return null;
+
+		const isOwned = ownerId === props.clientId;
+		return (
+			<Tag
+				icon={<UserOutlined />}
+				color={isOwned ? 'green' : 'default'}
+				style={{ marginLeft: '8px' }}
+			>
+				{isOwned ? 'Yours' : 'Claimed'}
+			</Tag>
+		);
+	};
+
+	const getClaimButton = (heroId: string) => {
+		if (!props.isRoomServerEnabled || !props.heroClaims) return null;
+
+		const ownerId = props.heroClaims.get(heroId);
+		const isOwned = ownerId === props.clientId;
+		const isClaimed = !!ownerId;
+
+		if (isOwned) {
+			return (
+				<Button
+					size='small'
+					onClick={(e) => {
+						e.stopPropagation();
+						props.releaseHeroClaim?.(heroId);
+					}}
+				>
+					Release
+				</Button>
+			);
+		}
+
+		if (!isClaimed) {
+			return (
+				<Button
+					size='small'
+					type='primary'
+					onClick={(e) => {
+						e.stopPropagation();
+						props.claimHero?.(heroId);
+					}}
+				>
+					Claim
+				</Button>
+			);
+		}
+
+		// DM can release others' claims
+		if (props.isDm && isClaimed) {
+			return (
+				<Button
+					size='small'
+					danger
+					onClick={(e) => {
+						e.stopPropagation();
+						props.releaseHeroClaim?.(heroId);
+					}}
+				>
+					Force Release
+				</Button>
+			);
+		}
+
+		return null;
+	};
+
 	const getHeroesSection = (list: Hero[]) => {
 		if (list.length === 0) {
 			return (
@@ -79,7 +159,17 @@ export const HeroListPage = (props: Props) => {
 				{
 					list.map(hero => (
 						<SelectablePanel key={hero.id} watermark={hero.picture || undefined} onSelect={() => navigation.goToHeroView(hero.id)}>
-							<HeroPanel hero={hero} sourcebooks={props.sourcebooks} options={props.options} />
+							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+								<div style={{ flex: 1 }}>
+									<HeroPanel hero={hero} sourcebooks={props.sourcebooks} options={props.options} />
+								</div>
+								{props.isRoomServerEnabled && (
+									<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', marginLeft: '8px' }}>
+										{getOwnershipBadge(hero.id)}
+										{getClaimButton(hero.id)}
+									</div>
+								)}
+							</div>
 						</SelectablePanel>
 					))
 				}

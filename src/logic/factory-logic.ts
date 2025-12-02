@@ -1071,7 +1071,9 @@ export class FactoryLogic {
 		return {
 			useWarehouse: false,
 			warehouseHost: '',
-			warehouseToken: ''
+			warehouseToken: '',
+			useRoomServer: false,
+			roomServerHost: ''
 		};
 	};
 

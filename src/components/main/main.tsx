@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Sourcebook, SourcebookElementKind } from '@/models/sourcebook';
 import { Spin, notification } from 'antd';
 import { Ability } from '@/models/ability';
@@ -80,6 +80,7 @@ import localforage from 'localforage';
 import { useErrorListener } from '@/hooks/use-error-listener';
 import { useIsSmall } from '@/hooks/use-is-small';
 import { useNavigation } from '@/hooks/use-navigation';
+import { useRoomSync } from '@/hooks/use-room-sync';
 import { useSyncStatus } from '@/hooks/use-sync-status';
 
 import './main.scss';
@@ -117,6 +118,30 @@ export const Main = (props: Props) => {
 	const [ spinning, setSpinning ] = useState(false);
 
 	useErrorListener(event => setErrors([ ...errors, event ]));
+
+	// Room sync for multiplayer support
+	const roomSync = useRoomSync(connectionSettings);
+
+	// Refresh data when other clients make changes
+	useEffect(() => {
+		if (!connectionSettings.useRoomServer) return;
+
+		const unsubscribe = roomSync.onDataChange('*', async () => {
+			// Refresh heroes and session when data changes
+			try {
+				const [newHeroes, newSession] = await Promise.all([
+					props.dataService.getHeroes(),
+					props.dataService.getSession()
+				]);
+				if (newHeroes) setHeroes(newHeroes);
+				if (newSession) setSession(newSession);
+			} catch (err) {
+				console.error('Error refreshing data from room server:', err);
+			}
+		});
+
+		return unsubscribe;
+	}, [connectionSettings.useRoomServer, roomSync, props.dataService]);
 
 	// #region Persistence
 
@@ -1557,6 +1582,12 @@ export const Main = (props: Props) => {
 									addHero={newHero}
 									importHero={importHero}
 									showParty={onShowParty}
+									isRoomServerEnabled={connectionSettings.useRoomServer}
+									clientId={connectionSettings.clientId}
+									isDm={roomSync.isDm}
+									heroClaims={roomSync.heroClaims}
+									claimHero={props.dataService.claimHero.bind(props.dataService)}
+									releaseHeroClaim={props.dataService.releaseHeroClaim.bind(props.dataService)}
 								/>
 							}
 						/>

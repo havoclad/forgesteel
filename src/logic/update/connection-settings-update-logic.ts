@@ -13,5 +13,13 @@ export class ConnectionSettingsUpdateLogic {
 		if (settings.warehouseToken === undefined) {
 			settings.warehouseToken = '';
 		}
+
+		if (settings.useRoomServer === undefined) {
+			settings.useRoomServer = false;
+		}
+
+		if (settings.roomServerHost === undefined) {
+			settings.roomServerHost = '';
+		}
 	};
 }

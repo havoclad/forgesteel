@@ -10,6 +10,7 @@ import { Expander } from '@/components/controls/expander/expander';
 import { FeatureFlags } from '@/utils/feature-flags';
 import { Field } from '@/components/controls/field/field';
 import { HeaderText } from '@/components/controls/header-text/header-text';
+import { RoomServerSettingsPanel } from '@/components/panels/room-server-settings-panel/room-server-settings-panel';
 import { Hero } from '@/models/hero';
 import { LabelControl } from '@/components/controls/label-control/label-control';
 import { Modal } from '@/components/modals/modal/modal';
@@ -632,6 +633,17 @@ export const SettingsModal = (props: Props) => {
 		);
 	};
 
+	const getRoomServerSettings = () => {
+		return (
+			<Expander title='Room Server'>
+				<RoomServerSettingsPanel
+					connectionSettings={props.connectionSettings}
+					setConnectionSettings={props.setConnectionSettings}
+				/>
+			</Expander>
+		);
+	};
+
 	const getConnectionSettings = () => {
 		if (FeatureFlags.hasFlag(FeatureFlags.warehouse.code)) {
 			return (
@@ -726,6 +738,7 @@ export const SettingsModal = (props: Props) => {
 			case 'Admin':
 				return (
 					<Space orientation='vertical' style={{ width: '100%' }}>
+						{getRoomServerSettings()}
 						{getFeatureFlags()}
 						{getConnectionSettings()}
 						{getErrors()}

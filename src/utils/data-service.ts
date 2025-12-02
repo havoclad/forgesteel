@@ -7,6 +7,11 @@ import { Session } from '@/models/session';
 import { Sourcebook } from '@/models/sourcebook';
 import localforage from 'localforage';
 
+export interface HeroClaim {
+	heroId: string;
+	clientId: string;
+}
+
 export class DataService {
 	settings: ConnectionSettings;
 	readonly host: string;
@@ -47,8 +52,25 @@ export class DataService {
 		return this.jwt;
 	}
 
+	private getRoomHeaders() {
+		return {
+			'x-client-id': this.settings.clientId || '',
+			'Content-Type': 'application/json'
+		};
+	}
+
 	private async getLocalOrWarehouse<T>(key: string): Promise<T | null> {
-		if (this.settings.useWarehouse) {
+		if (this.settings.useRoomServer) {
+			try {
+				const response = await axios.get(`${this.settings.roomServerHost}/data/${key}`, {
+					headers: this.getRoomHeaders()
+				});
+				return response.data.data;
+			} catch (error) {
+				console.error('Error communicating with Room Server', error);
+				throw new Error(this.getRoomErrorMessage(error), { cause: error });
+			}
+		} else if (this.settings.useWarehouse) {
 			await this.ensureJwt();
 			try {
 				const response = await axios.get(`${this.host}/data/${key}`, {
@@ -65,7 +87,18 @@ export class DataService {
 	}
 
 	private async putLocalOrWarehouse<T>(key: string, value: T): Promise<T> {
-		if (this.settings.useWarehouse) {
+		if (this.settings.useRoomServer) {
+			try {
+				await axios.put(`${this.settings.roomServerHost}/data/${key}`,
+					{ data: value },
+					{ headers: this.getRoomHeaders() }
+				);
+				return value;
+			} catch (error) {
+				console.error('Error communicating with Room Server', error);
+				throw new Error(this.getRoomErrorMessage(error), { cause: error });
+			}
+		} else if (this.settings.useWarehouse) {
 			await this.ensureJwt();
 			try {
 				await axios.put(`${this.host}/data/${key}`,
@@ -81,6 +114,19 @@ export class DataService {
 			return localforage.setItem<T>(key, value);
 		}
 	}
+
+	private getRoomErrorMessage = (error: unknown) => {
+		let msg = 'Error communicating with Room Server';
+		if (error instanceof AxiosError) {
+			msg = `Room Server Error: ${error.message}`;
+			if (error.response) {
+				const code = error.response.status;
+				const respMsg = error.response.data?.error ?? error.response.data?.message ?? error.response.data;
+				msg = `Room Server Error: [${code}] ${respMsg}`;
+			}
+		}
+		return msg;
+	};
 
 	async getOptions(): Promise<Options | null> {
 		return localforage.getItem<Options>('forgesteel-options');
@@ -134,5 +180,87 @@ export class DataService {
 
 	async saveHiddenSettingIds(ids: string[]): Promise<string[]> {
 		return this.putLocalOrWarehouse<string[]>('forgesteel-hidden-setting-ids', ids);
+	}
+
+	// Room Server specific methods
+
+	async connectToRoomServer(): Promise<{ clientId: string; role: 'dm' | 'player' }> {
+		if (!this.settings.useRoomServer) {
+			throw new Error('Room server is not enabled');
+		}
+
+		try {
+			const response = await axios.get(`${this.settings.roomServerHost}/connect`, {
+				headers: this.getRoomHeaders()
+			});
+			return {
+				clientId: response.data.clientId,
+				role: response.data.role
+			};
+		} catch (error) {
+			console.error('Error connecting to Room Server', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async getHeroClaims(): Promise<HeroClaim[]> {
+		if (!this.settings.useRoomServer) {
+			return [];
+		}
+
+		try {
+			const response = await axios.get(`${this.settings.roomServerHost}/claims`, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data.claims || [];
+		} catch (error) {
+			console.error('Error getting hero claims', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async claimHero(heroId: string): Promise<boolean> {
+		if (!this.settings.useRoomServer) {
+			return false;
+		}
+
+		try {
+			await axios.post(`${this.settings.roomServerHost}/heroes/${heroId}/claim`, {}, {
+				headers: this.getRoomHeaders()
+			});
+			return true;
+		} catch (error) {
+			if (error instanceof AxiosError && error.response?.status === 409) {
+				// Already claimed by someone else
+				return false;
+			}
+			console.error('Error claiming hero', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async releaseHeroClaim(heroId: string): Promise<boolean> {
+		if (!this.settings.useRoomServer) {
+			return false;
+		}
+
+		try {
+			const response = await axios.delete(`${this.settings.roomServerHost}/heroes/${heroId}/claim`, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data.success;
+		} catch (error) {
+			console.error('Error releasing hero claim', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async testRoomServerConnection(): Promise<boolean> {
+		try {
+			const response = await axios.get(`${this.settings.roomServerHost}/health`);
+			return response.data.status === 'ok';
+		} catch {
+			return false;
+		}
 	}
 };
