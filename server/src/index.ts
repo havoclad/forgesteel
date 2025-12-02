@@ -3,6 +3,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
+import { networkInterfaces } from 'os';
 import database from './db.js';
 
 const app = express();
@@ -267,9 +268,86 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// Get local network addresses
+function getNetworkAddresses(): string[] {
+  const nets = networkInterfaces();
+  const addresses: string[] = [];
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push(net.address);
+      }
+    }
+  }
+  return addresses;
+}
+
+// ANSI color codes
+const colors = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  green: '\x1b[32m',
+  cyan: '\x1b[36m',
+  yellow: '\x1b[33m',
+  magenta: '\x1b[35m'
+};
+
 // Start server
-server.listen(PORT, () => {
-  console.log(`Forgesteel Room Server running on port ${PORT}`);
-  console.log(`REST API: http://localhost:${PORT}`);
-  console.log(`WebSocket: ws://localhost:${PORT}/ws`);
+server.listen(PORT, '0.0.0.0', () => {
+  const networkAddresses = getNetworkAddresses();
+
+  console.log();
+  console.log(`  ${colors.green}${colors.bold}FORGESTEEL ROOM SERVER${colors.reset}  ${colors.dim}v1.0.0${colors.reset}`);
+  console.log();
+  console.log(`  ${colors.bold}Local:${colors.reset}      ${colors.cyan}http://localhost:${PORT}${colors.reset}`);
+
+  for (const addr of networkAddresses) {
+    console.log(`  ${colors.bold}Network:${colors.reset}    ${colors.cyan}http://${addr}:${PORT}${colors.reset}`);
+  }
+
+  console.log();
+  console.log(`  ${colors.dim}Clients connect using the Network address above${colors.reset}`);
+  console.log();
+  console.log(`  ${colors.yellow}Shortcuts${colors.reset}`);
+  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}r${colors.reset} ${colors.dim}to reset room (clear DM and claims)${colors.reset}`);
+  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}c${colors.reset} ${colors.dim}to show connected clients${colors.reset}`);
+  console.log(`  ${colors.dim}press${colors.reset} ${colors.bold}q${colors.reset} ${colors.dim}to quit${colors.reset}`);
+  console.log();
 });
+
+// Handle keyboard input for shortcuts
+if (process.stdin.isTTY) {
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.on('data', (key) => {
+    const char = key.toString();
+
+    if (char === 'q' || char === '\u0003') { // q or Ctrl+C
+      console.log('\nShutting down...');
+      process.exit(0);
+    }
+
+    if (char === 'r') {
+      database.resetRoom();
+      console.log(`${colors.yellow}Room reset${colors.reset} - DM and all claims cleared`);
+    }
+
+    if (char === 'c') {
+      const clientList = Array.from(clients.values());
+      console.log();
+      console.log(`${colors.cyan}Connected clients: ${clientList.length}${colors.reset}`);
+      if (clientList.length === 0) {
+        console.log(`  ${colors.dim}No clients connected${colors.reset}`);
+      } else {
+        for (const client of clientList) {
+          const roleColor = client.role === 'dm' ? colors.yellow : colors.cyan;
+          console.log(`  ${roleColor}${client.role.toUpperCase()}${colors.reset} ${client.id.substring(0, 8)}...`);
+        }
+      }
+      console.log();
+    }
+  });
+}
