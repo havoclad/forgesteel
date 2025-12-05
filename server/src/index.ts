@@ -1,10 +1,21 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { createServer } from 'http';
+import { createServer, IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import { networkInterfaces } from 'os';
+import { Duplex } from 'stream';
 import database from './db.js';
+import {
+  exchangeCodeForToken,
+  fetchDiscordUser,
+  createSessionToken,
+  verifySessionToken,
+  getDiscordAuthUrl,
+  isAuthConfigured,
+  type UserPayload,
+  type SessionPayload
+} from './auth.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -49,14 +60,109 @@ function broadcastClientList() {
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', clients: clients.size });
+  res.json({ status: 'ok', clients: clients.size, authConfigured: isAuthConfigured() });
+});
+
+// Auth middleware - extracts user from Bearer token
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Missing authorization header' });
+    return;
+  }
+
+  try {
+    const user = verifySessionToken(authHeader.slice(7));
+    (req as any).user = user;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// Discord OAuth endpoints
+
+// Get Discord OAuth URL
+app.get('/auth/discord/url', (_req, res) => {
+  if (!isAuthConfigured()) {
+    res.status(503).json({ error: 'Discord OAuth not configured' });
+    return;
+  }
+  const url = getDiscordAuthUrl();
+  res.json({ url });
+});
+
+// Exchange Discord code for session token
+app.post('/auth/discord', async (req, res) => {
+  if (!isAuthConfigured()) {
+    res.status(503).json({ error: 'Discord OAuth not configured' });
+    return;
+  }
+
+  const { code } = req.body;
+
+  if (!code) {
+    res.status(400).json({ error: 'Missing code' });
+    return;
+  }
+
+  try {
+    // Exchange code for Discord access token
+    const accessToken = await exchangeCodeForToken(code);
+
+    // Fetch user info from Discord
+    const discordUser = await fetchDiscordUser(accessToken);
+
+    // Create user payload
+    const user: UserPayload = {
+      id: discordUser.id,
+      username: discordUser.username,
+      displayName: discordUser.global_name || discordUser.username,
+      avatar: discordUser.avatar,
+    };
+
+    // Upsert user in database
+    database.upsertUser(user);
+
+    // Create session JWT
+    const token = createSessionToken(user);
+
+    res.json({ token, user });
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+});
+
+// Verify token and get current user
+app.get('/auth/me', requireAuth, (req, res) => {
+  const user = (req as any).user as SessionPayload;
+  res.json({ user });
 });
 
 // Connect - get client ID and role
 app.get('/connect', (req, res) => {
-  const existingClientId = req.headers['x-client-id'] as string | undefined;
-  const clientName = req.headers['x-client-name'] as string | undefined;
-  let clientId = existingClientId || uuidv4();
+  let clientId: string;
+  let clientName: string | undefined;
+
+  // Check for Bearer token auth first
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const user = verifySessionToken(authHeader.slice(7));
+      clientId = user.id;
+      clientName = user.displayName;
+    } catch {
+      // Invalid token - fall back to legacy auth
+      clientId = (req.headers['x-client-id'] as string) || uuidv4();
+      clientName = req.headers['x-client-name'] as string | undefined;
+    }
+  } else {
+    // Legacy auth with x-client-id header
+    clientId = (req.headers['x-client-id'] as string) || uuidv4();
+    clientName = req.headers['x-client-name'] as string | undefined;
+  }
 
   // Determine role
   const dmClientId = database.getDmClientId();
@@ -207,21 +313,72 @@ app.post('/reset', (req, res) => {
 // Create HTTP server
 const server = createServer(app);
 
-// WebSocket server
-const wss = new WebSocketServer({ server, path: '/ws' });
+// WebSocket server in noServer mode for custom auth handling
+const wss = new WebSocketServer({ noServer: true });
+
+// Handle WebSocket upgrade with JWT verification
+server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+  const url = new URL(request.url || '', `http://${request.headers.host}`);
+
+  // Only handle /ws path
+  if (url.pathname !== '/ws') {
+    socket.destroy();
+    return;
+  }
+
+  // Check for auth token
+  const token = url.searchParams.get('token');
+
+  // If auth is configured, require token
+  if (isAuthConfigured()) {
+    if (!token) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    try {
+      const user = verifySessionToken(token);
+      (request as any).user = user;
+    } catch {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+  } else {
+    // Fallback: use clientId query param (for local dev without auth)
+    const clientId = url.searchParams.get('clientId');
+    if (!clientId) {
+      socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    (request as any).clientId = clientId;
+  }
+
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit('connection', ws, request);
+  });
+});
 
 wss.on('connection', (ws, req) => {
-  const url = new URL(req.url || '', `http://${req.headers.host}`);
-  const clientId = url.searchParams.get('clientId');
+  // Get client identity from auth or fallback
+  let clientId: string;
+  let name: string | null;
 
-  if (!clientId) {
-    ws.close(4001, 'Missing clientId');
-    return;
+  if ((req as any).user) {
+    // Authenticated user
+    const user = (req as any).user as SessionPayload;
+    clientId = user.id;
+    name = user.displayName;
+  } else {
+    // Fallback to clientId (local dev)
+    clientId = (req as any).clientId;
+    name = database.getClientName(clientId);
   }
 
   const dmClientId = database.getDmClientId();
   const role: 'dm' | 'player' = clientId === dmClientId ? 'dm' : 'player';
-  const name = database.getClientName(clientId);
 
   const client: Client = {
     id: clientId,
@@ -323,6 +480,7 @@ const colors = {
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
   const networkAddresses = getNetworkAddresses();
+  const authEnabled = isAuthConfigured();
 
   console.log();
   console.log(`  ${colors.green}${colors.bold}FORGESTEEL ROOM SERVER${colors.reset}  ${colors.dim}v1.0.0${colors.reset}`);
@@ -333,6 +491,12 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`  ${colors.bold}Network:${colors.reset}    ${colors.cyan}http://${addr}:${PORT}${colors.reset}`);
   }
 
+  console.log();
+  if (authEnabled) {
+    console.log(`  ${colors.green}${colors.bold}Auth:${colors.reset}       ${colors.green}Discord OAuth enabled${colors.reset}`);
+  } else {
+    console.log(`  ${colors.yellow}${colors.bold}Auth:${colors.reset}       ${colors.yellow}Disabled (set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, JWT_SECRET)${colors.reset}`);
+  }
   console.log();
   console.log(`  ${colors.dim}Clients connect using the Network address above${colors.reset}`);
   console.log(`  ${colors.dim}Press Ctrl+C to stop the server${colors.reset}`);

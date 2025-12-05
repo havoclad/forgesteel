@@ -1,3 +1,10 @@
+export interface AuthenticatedUser {
+	id: string;
+	username: string;
+	displayName: string;
+	avatar: string | null;
+}
+
 export interface ConnectionSettings {
 	useWarehouse: boolean;
 	warehouseHost: string;
@@ -9,4 +16,8 @@ export interface ConnectionSettings {
 	clientId?: string;
 	role?: 'dm' | 'player';
 	playerName?: string;
+
+	// Discord OAuth authentication
+	authToken?: string;
+	authenticatedUser?: AuthenticatedUser;
 }

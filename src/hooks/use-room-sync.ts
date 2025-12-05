@@ -37,7 +37,8 @@ interface WebSocketMessage {
 export const useRoomSync = (settings: ConnectionSettings) => {
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-	const [state, setState] = useState<RoomSyncState>({
+	const connectRef = useRef<() => void>(() => {});
+	const [ state, setState ] = useState<RoomSyncState>({
 		isConnected: false,
 		clients: [],
 		heroClaims: new Map(),
@@ -65,14 +66,19 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				.replace(/^http:\/\//, 'ws://')
 				.replace(/^https:\/\//, 'wss://');
 
-			const ws = new WebSocket(`${wsHost}/ws?clientId=${settings.clientId}`);
+			// Use auth token if available, otherwise fall back to clientId
+			const wsUrl = settings.authToken
+				? `${wsHost}/ws?token=${settings.authToken}`
+				: `${wsHost}/ws?clientId=${settings.clientId}`;
+
+			const ws = new WebSocket(wsUrl);
 
 			ws.onopen = () => {
 				console.log('Room server WebSocket connected');
 				setState(prev => ({ ...prev, isConnected: true }));
 			};
 
-			ws.onmessage = (event) => {
+			ws.onmessage = event => {
 				try {
 					const message: WebSocketMessage = JSON.parse(event.data);
 
@@ -178,12 +184,12 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				// Attempt to reconnect after 3 seconds
 				if (settings.useRoomServer && settings.clientId) {
 					reconnectTimeoutRef.current = setTimeout(() => {
-						connect();
+						connectRef.current();
 					}, 3000);
 				}
 			};
 
-			ws.onerror = (error) => {
+			ws.onerror = error => {
 				console.error('WebSocket error:', error);
 			};
 
@@ -191,7 +197,12 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		} catch (err) {
 			console.error('Error connecting to WebSocket:', err);
 		}
-	}, [settings.useRoomServer, settings.roomServerHost, settings.clientId]);
+	}, [ settings.useRoomServer, settings.roomServerHost, settings.clientId, settings.authToken ]);
+
+	// Keep connectRef updated with latest connect function
+	useEffect(() => {
+		connectRef.current = connect;
+	}, [ connect ]);
 
 	// Connect when settings change
 	useEffect(() => {
@@ -221,7 +232,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				wsRef.current = null;
 			}
 		};
-	}, [settings.useRoomServer, settings.clientId, connect]);
+	}, [ settings.useRoomServer, settings.clientId, connect ]);
 
 	// Keepalive ping every 30 seconds
 	useEffect(() => {
@@ -234,7 +245,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		}, 30000);
 
 		return () => clearInterval(interval);
-	}, [state.isConnected]);
+	}, [ state.isConnected ]);
 
 	// Register callback for data changes
 	const onDataChange = useCallback((key: string, callback: () => void) => {
@@ -249,24 +260,24 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		if (!settings.useRoomServer || !settings.clientId) return true; // Local mode - owns all
 		const claimOwner = state.heroClaims.get(heroId);
 		return claimOwner === settings.clientId || settings.role === 'dm';
-	}, [settings.useRoomServer, settings.clientId, settings.role, state.heroClaims]);
+	}, [ settings.useRoomServer, settings.clientId, settings.role, state.heroClaims ]);
 
 	// Check if hero is claimed by anyone
 	const getHeroOwner = useCallback((heroId: string) => {
 		return state.heroClaims.get(heroId) || null;
-	}, [state.heroClaims]);
+	}, [ state.heroClaims ]);
 
 	// Get the display name for a client
 	const getClientName = useCallback((clientId: string) => {
 		return state.clientNames.get(clientId) || null;
-	}, [state.clientNames]);
+	}, [ state.clientNames ]);
 
 	// Get the owner's name for a hero
 	const getHeroOwnerName = useCallback((heroId: string) => {
 		const ownerId = state.heroClaims.get(heroId);
 		if (!ownerId) return null;
 		return state.clientNames.get(ownerId) || null;
-	}, [state.heroClaims, state.clientNames]);
+	}, [ state.heroClaims, state.clientNames ]);
 
 	// Check if current user can edit a hero
 	const canEditHero = useCallback((heroId: string) => {
@@ -274,7 +285,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		if (settings.role === 'dm') return true; // DM can edit all
 		const owner = state.heroClaims.get(heroId);
 		return owner === settings.clientId; // Player can only edit their own claimed heroes
-	}, [settings.useRoomServer, settings.role, settings.clientId, state.heroClaims]);
+	}, [ settings.useRoomServer, settings.role, settings.clientId, state.heroClaims ]);
 
 	return {
 		...state,

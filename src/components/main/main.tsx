@@ -76,6 +76,7 @@ import { TerrainModal } from '@/components/modals/terrain/terrain-modal';
 import { Title } from '@/models/title';
 import { Utils } from '@/utils/utils';
 import { WelcomePage } from '@/components/pages/welcome/welcome-page';
+import { AuthCallbackPage } from '@/components/pages/auth-callback/auth-callback-page';
 import localforage from 'localforage';
 import { useErrorListener } from '@/hooks/use-error-listener';
 import { useIsSmall } from '@/hooks/use-is-small';
@@ -129,7 +130,7 @@ export const Main = (props: Props) => {
 		const unsubscribe = roomSync.onDataChange('*', async () => {
 			// Refresh heroes and session when data changes
 			try {
-				const [newHeroes, newSession] = await Promise.all([
+				const [ newHeroes, newSession ] = await Promise.all([
 					props.dataService.getHeroes(),
 					props.dataService.getSession()
 				]);
@@ -141,7 +142,7 @@ export const Main = (props: Props) => {
 		});
 
 		return unsubscribe;
-	}, [connectionSettings.useRoomServer, roomSync, props.dataService]);
+	}, [ connectionSettings.useRoomServer, roomSync, props.dataService ]);
 
 	// #region Persistence
 
@@ -1788,6 +1789,15 @@ export const Main = (props: Props) => {
 						}
 					/>
 				</Route>
+				<Route
+					path='auth/callback'
+					element={
+						<AuthCallbackPage
+							connectionSettings={connectionSettings}
+							setConnectionSettings={persistConnectionSettings}
+						/>
+					}
+				/>
 				<Route path='*' element={<Navigate to='/' replace={true} />} />
 			</Routes>
 			{notifyContext}

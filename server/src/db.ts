@@ -30,6 +30,15 @@ db.exec(`
     client_id TEXT PRIMARY KEY,
     name TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    avatar TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    last_login TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // Prepared statements for better performance
@@ -74,6 +83,18 @@ const upsertClientNameStmt = db.prepare(`
   ON CONFLICT(client_id) DO UPDATE SET name = excluded.name
 `);
 
+// User statements
+const getUserStmt = db.prepare('SELECT id, username, display_name, avatar, created_at, last_login FROM users WHERE id = ?');
+const upsertUserStmt = db.prepare(`
+  INSERT INTO users (id, username, display_name, avatar)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(id) DO UPDATE SET
+    username = excluded.username,
+    display_name = excluded.display_name,
+    avatar = excluded.avatar,
+    last_login = datetime('now')
+`);
+
 export interface GameData {
   data: string;
   version: number;
@@ -87,6 +108,15 @@ export interface HeroClaim {
 export interface ClientName {
   clientId: string;
   name: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export const database = {
@@ -176,6 +206,33 @@ export const database = {
 
   setClientName(clientId: string, name: string): void {
     upsertClientNameStmt.run(clientId, name);
+  },
+
+  // User operations
+  getUser(id: string): User | null {
+    const row = getUserStmt.get(id) as {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar: string | null;
+      created_at: string;
+      last_login: string;
+    } | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name,
+      avatar: row.avatar,
+      createdAt: row.created_at,
+      lastLogin: row.last_login
+    };
+  },
+
+  upsertUser(user: { id: string; username: string; displayName: string; avatar: string | null }): void {
+    upsertUserStmt.run(user.id, user.username, user.displayName, user.avatar);
+    // Also update client_names table so display name shows in UI
+    upsertClientNameStmt.run(user.id, user.displayName);
   }
 };
 

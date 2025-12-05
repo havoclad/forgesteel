@@ -54,12 +54,19 @@ export class DataService {
 
 	private getRoomHeaders(includeName = false) {
 		const headers: Record<string, string> = {
-			'x-client-id': this.settings.clientId || '',
 			'Content-Type': 'application/json'
 		};
-		if (includeName && this.settings.playerName) {
-			headers['x-client-name'] = this.settings.playerName;
+
+		// Use Bearer token if authenticated, otherwise fall back to x-client-id
+		if (this.settings.authToken) {
+			headers['Authorization'] = `Bearer ${this.settings.authToken}`;
+		} else {
+			headers['x-client-id'] = this.settings.clientId || '';
+			if (includeName && this.settings.playerName) {
+				headers['x-client-name'] = this.settings.playerName;
+			}
 		}
+
 		return headers;
 	}
 

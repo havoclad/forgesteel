@@ -10,6 +10,14 @@ import './index.scss';
 
 initializeTheme();
 
+// Handle OAuth callback redirect for HashRouter
+// Discord redirects to /forgesteel/auth/callback?code=... but HashRouter needs /#/auth/callback?code=...
+// This detects the OAuth callback and redirects to the hash-based route
+if (window.location.pathname.endsWith('/auth/callback') && window.location.search.includes('code=')) {
+	const hashUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/auth/callback${window.location.search}`;
+	window.location.replace(hashUrl);
+}
+
 // Register Service Worker for PWA functionality
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
