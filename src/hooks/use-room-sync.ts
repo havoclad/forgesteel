@@ -9,12 +9,18 @@ export interface RoomClient {
 	connectedAt: string;
 }
 
+export interface DirectorInfo {
+	dmClientId: string | null;
+	dmIsDiscordUser: boolean;
+}
+
 export interface RoomSyncState {
 	isConnected: boolean;
 	clients: RoomClient[];
 	heroClaims: Map<string, string>; // heroId -> clientId
 	clientNames: Map<string, string>; // clientId -> name
 	lastDataChange: { key: string; version: number } | null;
+	directorInfo: DirectorInfo | null;
 }
 
 interface ClientName {
@@ -32,6 +38,10 @@ interface WebSocketMessage {
 	clientNames?: ClientName[];
 	clients?: RoomClient[];
 	list?: RoomClient[];
+	director?: DirectorInfo;
+	dmClientId?: string | null;
+	dmName?: string | null;
+	dmIsDiscordUser?: boolean;
 }
 
 export const useRoomSync = (settings: ConnectionSettings) => {
@@ -43,7 +53,8 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		clients: [],
 		heroClaims: new Map(),
 		clientNames: new Map(),
-		lastDataChange: null
+		lastDataChange: null,
+		directorInfo: null
 	});
 
 	// Callbacks for data change notifications
@@ -98,7 +109,8 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 									...prev,
 									clients: message.clients || [],
 									heroClaims: newClaims,
-									clientNames: newNames
+									clientNames: newNames,
+									directorInfo: message.director || null
 								};
 							});
 							break;
@@ -159,11 +171,23 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 							break;
 
 						case 'room_reset':
-							// Room was reset - clear claims and names
+							// Room was reset - clear claims, names, and director
 							setState(prev => ({
 								...prev,
 								heroClaims: new Map(),
-								clientNames: new Map()
+								clientNames: new Map(),
+								directorInfo: null
+							}));
+							break;
+
+						case 'director_changed':
+							// Director role changed
+							setState(prev => ({
+								...prev,
+								directorInfo: {
+									dmClientId: message.dmClientId ?? null,
+									dmIsDiscordUser: message.dmIsDiscordUser ?? false
+								}
 							}));
 							break;
 
@@ -219,7 +243,8 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				clients: [],
 				heroClaims: new Map(),
 				clientNames: new Map(),
-				lastDataChange: null
+				lastDataChange: null,
+				directorInfo: null
 			});
 		}
 
@@ -287,6 +312,17 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		return owner === settings.clientId; // Player can only edit their own claimed heroes
 	}, [ settings.useRoomServer, settings.role, settings.clientId, state.heroClaims ]);
 
+	// Check if current user can claim the director role
+	// Can claim if: authenticated with Discord, not already DM, and current DM is not a Discord user
+	const canClaimDirector = useCallback(() => {
+		if (!settings.useRoomServer) return false;
+		if (!settings.authToken) return false; // Must be Discord-authenticated
+		if (settings.role === 'dm') return false; // Already the director
+		if (!state.directorInfo) return true; // No director info means we might be able to claim
+		if (state.directorInfo.dmIsDiscordUser) return false; // Can't claim from another Discord user
+		return true; // Current director is not a Discord user, can claim
+	}, [ settings.useRoomServer, settings.authToken, settings.role, state.directorInfo ]);
+
 	return {
 		...state,
 		onDataChange,
@@ -295,6 +331,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		getClientName,
 		getHeroOwnerName,
 		canEditHero,
+		canClaimDirector,
 		isDm: settings.role === 'dm',
 		clientId: settings.clientId
 	};

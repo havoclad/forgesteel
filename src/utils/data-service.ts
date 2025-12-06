@@ -291,4 +291,59 @@ export class DataService {
 			return false;
 		}
 	}
+
+	// Director role management
+
+	async getDirectorStatus(): Promise<{
+		dmClientId: string | null;
+		dmName: string | null;
+		dmIsDiscordUser: boolean;
+		canClaim: boolean;
+	}> {
+		if (!this.settings.useRoomServer) {
+			return { dmClientId: null, dmName: null, dmIsDiscordUser: false, canClaim: false };
+		}
+
+		try {
+			const response = await axios.get(`${this.settings.roomServerHost}/director/status`, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data;
+		} catch (error) {
+			console.error('Error getting director status', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async claimDirectorRole(): Promise<{ success: boolean; role: 'dm' | 'player' }> {
+		if (!this.settings.useRoomServer) {
+			throw new Error('Room server is not enabled');
+		}
+
+		try {
+			const response = await axios.post(`${this.settings.roomServerHost}/director/claim`, {}, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data;
+		} catch (error) {
+			console.error('Error claiming director role', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
+
+	async releaseDirectorRole(): Promise<{ success: boolean; role: 'dm' | 'player' }> {
+		if (!this.settings.useRoomServer) {
+			throw new Error('Room server is not enabled');
+		}
+
+		try {
+			const response = await axios.post(`${this.settings.roomServerHost}/director/release`, {}, {
+				headers: this.getRoomHeaders()
+			});
+			return response.data;
+		} catch (error) {
+			console.error('Error releasing director role', error);
+			throw new Error(this.getRoomErrorMessage(error), { cause: error });
+		}
+	}
 };

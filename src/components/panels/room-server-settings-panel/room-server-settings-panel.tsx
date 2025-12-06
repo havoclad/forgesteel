@@ -1,5 +1,5 @@
 import { Alert, Avatar, Button, Flex, Input, Space, Tag } from 'antd';
-import { CloudServerOutlined, LoginOutlined, LogoutOutlined, SaveFilled, UserOutlined } from '@ant-design/icons';
+import { CloudServerOutlined, CrownOutlined, LoginOutlined, LogoutOutlined, SaveFilled, UserOutlined } from '@ant-design/icons';
 import { JSX, useEffect, useState } from 'react';
 import { ConnectionSettings } from '@/models/connection-settings';
 import { DataService } from '@/utils/data-service';
@@ -19,6 +19,9 @@ export const RoomServerSettingsPanel = (props: Props) => {
 	const [ connecting, setConnecting ] = useState<boolean>(false);
 	const [ checkingAuth, setCheckingAuth ] = useState<boolean>(false);
 	const [ testStatusAlert, setTestStatusAlert ] = useState<JSX.Element | null>(null);
+	const [ claimingDirector, setClaimingDirector ] = useState<boolean>(false);
+	const [ releasingDirector, setReleasingDirector ] = useState<boolean>(false);
+	const [ directorStatus, setDirectorStatus ] = useState<{ canClaim: boolean; dmIsDiscordUser: boolean } | null>(null);
 
 	// Sync local state when props change (e.g., after OAuth callback)
 	// Watch specific primitive values to ensure proper change detection
@@ -26,6 +29,27 @@ export const RoomServerSettingsPanel = (props: Props) => {
 		setConnectionSettings(Utils.copy(props.connectionSettings));
 		setConnectionSettingsChanged(false);
 	}, [ props.connectionSettings.authToken, props.connectionSettings.authenticatedUser?.id, props.connectionSettings.clientId, props.connectionSettings.role ]);
+
+	// Fetch director status when authenticated
+	useEffect(() => {
+		const fetchDirectorStatus = async () => {
+			if (!connectionSettings.authToken || !connectionSettings.roomServerHost || !connectionSettings.useRoomServer) {
+				setDirectorStatus(null);
+				return;
+			}
+
+			try {
+				const ds = new DataService(connectionSettings);
+				const status = await ds.getDirectorStatus();
+				setDirectorStatus({ canClaim: status.canClaim, dmIsDiscordUser: status.dmIsDiscordUser });
+			} catch (error) {
+				console.error('Error fetching director status:', error);
+				setDirectorStatus(null);
+			}
+		};
+
+		fetchDirectorStatus();
+	}, [ connectionSettings.authToken, connectionSettings.roomServerHost, connectionSettings.useRoomServer, connectionSettings.role ]);
 
 	const setUseRoomServer = (value: boolean) => {
 		const copy = Utils.copy(connectionSettings);
@@ -182,6 +206,62 @@ export const RoomServerSettingsPanel = (props: Props) => {
 		}, 3000);
 	};
 
+	const handleClaimDirector = async () => {
+		setClaimingDirector(true);
+		setTestStatusAlert(null);
+
+		try {
+			const ds = new DataService(connectionSettings);
+			const result = await ds.claimDirectorRole();
+
+			if (result.success) {
+				// Update local and parent state with new role
+				const copy = Utils.copy(connectionSettings);
+				copy.role = result.role;
+				setConnectionSettings(copy);
+				props.setConnectionSettings(copy);
+				setDirectorStatus({ canClaim: false, dmIsDiscordUser: true });
+				setTestStatusAlert(<Alert title='You are now the Director!' type='success' showIcon closable />);
+			}
+		} catch (err) {
+			const errMessage = err instanceof Error ? err.message : 'Failed to claim director role';
+			setTestStatusAlert(<Alert title={errMessage} type='error' showIcon closable />);
+		}
+
+		setClaimingDirector(false);
+		setTimeout(() => {
+			setTestStatusAlert(null);
+		}, 5000);
+	};
+
+	const handleReleaseDirector = async () => {
+		setReleasingDirector(true);
+		setTestStatusAlert(null);
+
+		try {
+			const ds = new DataService(connectionSettings);
+			const result = await ds.releaseDirectorRole();
+
+			if (result.success) {
+				// Update local and parent state with new role
+				const copy = Utils.copy(connectionSettings);
+				copy.role = result.role;
+				setConnectionSettings(copy);
+				props.setConnectionSettings(copy);
+				setDirectorStatus({ canClaim: false, dmIsDiscordUser: false });
+				setTestStatusAlert(<Alert title='Director role released' type='info' showIcon closable />);
+			}
+		} catch (err) {
+			const errMessage = err instanceof Error ? err.message : 'Failed to release director role';
+			setTestStatusAlert(<Alert title={errMessage} type='error' showIcon closable />);
+		}
+
+		setReleasingDirector(false);
+		setTimeout(() => {
+			setTestStatusAlert(null);
+		}, 5000);
+	};
+
 	const saveSettings = () => {
 		props.setConnectionSettings(connectionSettings);
 		setConnectionSettingsChanged(false);
@@ -276,6 +356,28 @@ export const RoomServerSettingsPanel = (props: Props) => {
 							</Button>
 						)}
 					</>
+				)}
+				{/* Claim Director button - visible when authenticated, not DM, and can claim */}
+				{isAuthenticated && connectionSettings.role !== 'dm' && directorStatus?.canClaim && (
+					<Button
+						loading={claimingDirector}
+						icon={<CrownOutlined />}
+						onClick={handleClaimDirector}
+						type='primary'
+					>
+						Claim Director
+					</Button>
+				)}
+				{/* Release Director button - visible when authenticated and is DM */}
+				{isAuthenticated && connectionSettings.role === 'dm' && (
+					<Button
+						loading={releasingDirector}
+						icon={<CrownOutlined />}
+						onClick={handleReleaseDirector}
+						danger
+					>
+						Release Director
+					</Button>
 				)}
 				{/* Sign Out button - visible whenever authenticated */}
 				{isAuthenticated && (

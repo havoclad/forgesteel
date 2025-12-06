@@ -145,6 +145,7 @@ app.get('/auth/me', requireAuth, (req, res) => {
 app.get('/connect', (req, res) => {
   let clientId: string;
   let clientName: string | undefined;
+  let isDiscordUser = false;
 
   // Check for Bearer token auth first
   const authHeader = req.headers.authorization;
@@ -153,6 +154,7 @@ app.get('/connect', (req, res) => {
       const user = verifySessionToken(authHeader.slice(7));
       clientId = user.id;
       clientName = user.displayName;
+      isDiscordUser = true;
     } catch {
       // Invalid token - fall back to legacy auth
       clientId = (req.headers['x-client-id'] as string) || uuidv4();
@@ -170,7 +172,7 @@ app.get('/connect', (req, res) => {
 
   if (!dmClientId) {
     // First client becomes DM
-    database.setDmClientId(clientId);
+    database.setDmClientId(clientId, isDiscordUser);
     role = 'dm';
   } else if (dmClientId === clientId) {
     role = 'dm';
@@ -310,6 +312,98 @@ app.post('/reset', (req, res) => {
   res.json({ success: true });
 });
 
+// Director management endpoints
+
+// Get director status
+app.get('/director/status', (req, res) => {
+  const dmClientId = database.getDmClientId();
+  const dmIsDiscordUser = database.isDmDiscordUser();
+  const dmName = dmClientId ? database.getClientName(dmClientId) : null;
+
+  // Check if requester can claim
+  let canClaim = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const user = verifySessionToken(authHeader.slice(7));
+      // Can claim if: no DM, or DM is not Discord, and requester is not already DM
+      canClaim = (!dmClientId || !dmIsDiscordUser) && user.id !== dmClientId;
+    } catch {
+      // Invalid token - can't claim
+    }
+  }
+
+  res.json({ dmClientId, dmName, dmIsDiscordUser, canClaim });
+});
+
+// Claim director role (Discord users only, can only claim from non-Discord users)
+app.post('/director/claim', requireAuth, (req, res) => {
+  const user = (req as any).user as SessionPayload;
+  const clientId = user.id;
+
+  const currentDmId = database.getDmClientId();
+  const dmIsDiscordUser = database.isDmDiscordUser();
+
+  // Can only claim if no DM or DM is not a Discord user
+  if (currentDmId && dmIsDiscordUser) {
+    res.status(403).json({ error: 'Director role is held by a Discord user' });
+    return;
+  }
+
+  // Claim the role
+  database.setDmClientId(clientId, true);
+
+  // Update connected client's role if they're connected
+  const client = clients.get(clientId);
+  if (client) {
+    client.role = 'dm';
+  }
+
+  // Broadcast director change
+  broadcast({
+    type: 'director_changed',
+    dmClientId: clientId,
+    dmName: user.displayName,
+    dmIsDiscordUser: true
+  });
+  broadcastClientList();
+
+  res.json({ success: true, role: 'dm' });
+});
+
+// Release director role (current director only)
+app.post('/director/release', requireAuth, (req, res) => {
+  const user = (req as any).user as SessionPayload;
+  const clientId = user.id;
+
+  const currentDmId = database.getDmClientId();
+
+  if (currentDmId !== clientId) {
+    res.status(403).json({ error: 'You are not the director' });
+    return;
+  }
+
+  // Clear the director
+  database.clearDmClientId();
+
+  // Update connected client's role
+  const client = clients.get(clientId);
+  if (client) {
+    client.role = 'player';
+  }
+
+  // Broadcast director change
+  broadcast({
+    type: 'director_changed',
+    dmClientId: null,
+    dmName: null,
+    dmIsDiscordUser: false
+  });
+  broadcastClientList();
+
+  res.json({ success: true, role: 'player' });
+});
+
 // Create HTTP server
 const server = createServer(app);
 
@@ -392,7 +486,7 @@ wss.on('connection', (ws, req) => {
   const displayName = name ? `${name} (${clientId.substring(0, 8)}...)` : clientId.substring(0, 8) + '...';
   console.log(`Client connected: ${displayName} (${role})`);
 
-  // Send current claims, client list, and client names
+  // Send current claims, client list, client names, and director info
   ws.send(JSON.stringify({
     type: 'init',
     claims: database.getAllClaims(),
@@ -402,7 +496,11 @@ wss.on('connection', (ws, req) => {
       role: c.role,
       name: c.name,
       connectedAt: c.connectedAt.toISOString()
-    }))
+    })),
+    director: {
+      dmClientId: database.getDmClientId(),
+      dmIsDiscordUser: database.isDmDiscordUser()
+    }
   }));
 
   // Notify others of new connection

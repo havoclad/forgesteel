@@ -182,8 +182,19 @@ export const database = {
     return this.getRoomState('dm_client_id');
   },
 
-  setDmClientId(clientId: string): void {
+  // Check if current DM is a Discord-authenticated user
+  isDmDiscordUser(): boolean {
+    return this.getRoomState('dm_is_discord_user') === 'true';
+  },
+
+  setDmClientId(clientId: string, isDiscordUser: boolean = false): void {
     this.setRoomState('dm_client_id', clientId);
+    this.setRoomState('dm_is_discord_user', isDiscordUser ? 'true' : 'false');
+  },
+
+  // Clear DM assignment (for voluntary release)
+  clearDmClientId(): void {
+    db.exec("DELETE FROM room_state WHERE key IN ('dm_client_id', 'dm_is_discord_user')");
   },
 
   // Reset room (clear DM and claims)
