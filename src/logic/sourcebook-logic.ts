@@ -53,7 +53,7 @@ export class SourcebookLogic {
 			list.push(SourcebookData.playtest);
 		}
 
-		if (FeatureFlags.hasFlag(FeatureFlags.community.code)) {
+		if (FeatureFlags.hasFlag(FeatureFlags.communityPreRelease.code)) {
 			list.push(SourcebookData.communityPrerelease);
 		}
 
@@ -443,10 +443,8 @@ export class SourcebookLogic {
 
 	///////////////////////////////////////////////////////////////////////////
 
-	static getAllClassAbilities = (heroClass: HeroClass) => {
+	static getAbilitiesFromClass = (heroClass: HeroClass, classAbilities: boolean, selectedSubclassAbilities: boolean, unselectedSubclassAbilities: boolean, classLevels: boolean, selectedSubclassLevels: boolean, unselectedSubclassLevels: boolean) => {
 		const abilities: Ability[] = [];
-
-		abilities.push(...heroClass.abilities);
 
 		const addFeature = (feature: Feature) => {
 			switch (feature.type) {
@@ -462,13 +460,36 @@ export class SourcebookLogic {
 			}
 		};
 
-		const levels = [
-			...heroClass.featuresByLevel,
-			...heroClass.subclasses.flatMap(sc => sc.featuresByLevel)
-		];
-		levels.forEach(lvl => {
-			lvl.features.forEach(addFeature);
-		});
+		if (classAbilities) {
+			abilities.push(...heroClass.abilities);
+		}
+
+		if (selectedSubclassAbilities) {
+			abilities.push(...heroClass.subclasses.filter(sc => sc.selected).flatMap(sc => sc.abilities));
+		}
+
+		if (unselectedSubclassAbilities) {
+			abilities.push(...heroClass.subclasses.filter(sc => !sc.selected).flatMap(sc => sc.abilities));
+		}
+
+		if (classLevels) {
+			heroClass.featuresByLevel
+				.forEach(lvl => lvl.features.forEach(addFeature));
+		}
+
+		if (selectedSubclassLevels) {
+			heroClass.subclasses
+				.filter(sc => sc.selected)
+				.flatMap(sc => sc.featuresByLevel)
+				.forEach(lvl => lvl.features.forEach(addFeature));
+		}
+
+		if (unselectedSubclassLevels) {
+			heroClass.subclasses
+				.filter(sc => !sc.selected)
+				.flatMap(sc => sc.featuresByLevel)
+				.forEach(lvl => lvl.features.forEach(addFeature));
+		}
 
 		return abilities;
 	};

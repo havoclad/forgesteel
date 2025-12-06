@@ -18,7 +18,7 @@ export class FeatureFlags {
 		description: 'Access to the Playtest sourcebook'
 	};
 
-	static community: FeatureFlag = {
+	static communityPreRelease: FeatureFlag = {
 		code: Utils.hashCode('community'),
 		description: 'Access to the (pre-release) Community sourcebook'
 	};
@@ -26,7 +26,7 @@ export class FeatureFlags {
 	private static all = [
 		FeatureFlags.warehouse,
 		FeatureFlags.playtest,
-		FeatureFlags.community
+		FeatureFlags.communityPreRelease
 	];
 
 	// #endregion

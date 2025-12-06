@@ -283,6 +283,7 @@ export class FactoryLogic {
 			name: '',
 			description: '',
 			featuresByLevel: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map(n => ({ level: n, features: [], optionalFeatures: [] })),
+			abilities: [],
 			selected: false
 		};
 	};
@@ -916,8 +917,7 @@ export class FactoryLogic {
 			bonus: data.bonus ?? 0,
 			tier1: data.tier1,
 			tier2: data.tier2,
-			tier3: data.tier3,
-			crit: data.crit || ''
+			tier3: data.tier3
 		};
 	};
 
