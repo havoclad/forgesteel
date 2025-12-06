@@ -113,7 +113,7 @@ export const HeroListPage = (props: Props) => {
 			return (
 				<Button
 					size='small'
-					onClick={(e) => {
+					onClick={e => {
 						e.stopPropagation();
 						props.releaseHeroClaim?.(heroId);
 					}}
@@ -128,7 +128,7 @@ export const HeroListPage = (props: Props) => {
 				<Button
 					size='small'
 					type='primary'
-					onClick={(e) => {
+					onClick={e => {
 						e.stopPropagation();
 						props.claimHero?.(heroId);
 					}}
@@ -144,7 +144,7 @@ export const HeroListPage = (props: Props) => {
 				<Button
 					size='small'
 					danger
-					onClick={(e) => {
+					onClick={e => {
 						e.stopPropagation();
 						props.releaseHeroClaim?.(heroId);
 					}}
