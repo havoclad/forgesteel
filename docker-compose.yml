@@ -1,0 +1,27 @@
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-development-secret-change-in-production}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
+      - DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI:-http://localhost:8080/auth/callback}
+    volumes:
+      - server-data:/app/data
+
+volumes:
+  server-data:

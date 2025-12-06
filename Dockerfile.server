@@ -1,0 +1,29 @@
+# Server Dockerfile - runs the room server
+FROM node:20-alpine
+
+# Install build tools for better-sqlite3
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy package files
+COPY server/package.json server/package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source files
+COPY server/src ./src
+COPY server/tsconfig.json ./
+
+# Build TypeScript
+RUN npm run build
+
+# Create data directory for SQLite (relative to dist/, matching db.ts path)
+RUN mkdir -p /app/data
+
+ENV PORT=3001
+
+EXPOSE 3001
+
+CMD ["node", "dist/index.js"]
