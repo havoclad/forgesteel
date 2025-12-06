@@ -46,7 +46,7 @@ interface WebSocketMessage {
 
 export const useRoomSync = (settings: ConnectionSettings) => {
 	const wsRef = useRef<WebSocket | null>(null);
-	const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const connectRef = useRef<() => void>(() => {});
 	const [ state, setState ] = useState<RoomSyncState>({
 		isConnected: false,
