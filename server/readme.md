@@ -1,6 +1,6 @@
 # Forge Steel Server
 
-See ../readme.md for launching forgesteel.  These instructions are for
+See `../readme.md` for launching forgesteel.  These instructions are for
 standing up the group server.
 
 **FORGE STEEL** is a hero builder app for **DRAW STEEL**, designed by [Andy Aiken](mailto:andy.aiken@live.co.uk).
@@ -28,14 +28,17 @@ If you would like to contribute, you can:
 To run the server locally, run the following commands:
 
 ```
+cd server
 npm install
 ```
 
-Once built, the app should then be available at `http://localhost:3001`
 
 Configure Discord Developer Portal
-Oauth2 ->  Redirects -> Add: http//localhost:5173/forgesteel/auth/callback
+
+> Oauth2 ->  Redirects -> Add: http//localhost:5173/forgesteel/auth/callback
+
 Copy your ClientID to  server/.env (start from server/.env.example)
+
 Copy your Client Secret to server/.env
 
 ```
@@ -43,13 +46,16 @@ DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_REDIRECT=http://localhost:5173/forgesteel/auth/callback
 JWT_SECRET=$(openssl rand -base64 32)
-``
+```
 
-Then ```
+Then 
+```
 npm run dev
 ```
 
-In forgesteel go to Settings -> Admin -> Room Server and put in the URL
+The app should then tell you it is available at `http://localhost:3001`
+
+In forgesteel go to Settings -> Admin -> Room Server and put in this URL
 
 The server will show 'Auth: Discord Oauth enabled' when configured
 correctly. Without the `.env` file, it falls back to legacy UUID-based
