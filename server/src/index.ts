@@ -63,6 +63,20 @@ app.get('/health', (_req, res) => {
 	res.json({ status: 'ok', clients: clients.size, authConfigured: isAuthConfigured() });
 });
 
+// Helper to get client ID from either Bearer token or x-client-id header
+function getClientId(req: Request): string | null {
+	const authHeader = req.headers.authorization;
+	if (authHeader?.startsWith('Bearer ')) {
+		try {
+			const user = verifySessionToken(authHeader.slice(7));
+			return user.id;
+		} catch {
+			return null;
+		}
+	}
+	return req.headers['x-client-id'] as string || null;
+}
+
 // Auth middleware - extracts user from Bearer token
 function requireAuth(req: Request, res: Response, next: NextFunction) {
 	const authHeader = req.headers.authorization;
@@ -249,10 +263,10 @@ app.get('/claims', (_req, res) => {
 // Claim a hero
 app.post('/heroes/:heroId/claim', (req, res) => {
 	const { heroId } = req.params;
-	const clientId = req.headers['x-client-id'] as string;
+	const clientId = getClientId(req);
 
 	if (!clientId) {
-		res.status(400).json({ error: 'Missing x-client-id header' });
+		res.status(400).json({ error: 'Missing authentication' });
 		return;
 	}
 
@@ -274,10 +288,10 @@ app.post('/heroes/:heroId/claim', (req, res) => {
 // Release a hero claim
 app.delete('/heroes/:heroId/claim', (req, res) => {
 	const { heroId } = req.params;
-	const clientId = req.headers['x-client-id'] as string;
+	const clientId = getClientId(req);
 
 	if (!clientId) {
-		res.status(400).json({ error: 'Missing x-client-id header' });
+		res.status(400).json({ error: 'Missing authentication' });
 		return;
 	}
 
@@ -298,7 +312,7 @@ app.delete('/heroes/:heroId/claim', (req, res) => {
 
 // Reset room (DM only)
 app.post('/reset', (req, res) => {
-	const clientId = req.headers['x-client-id'] as string;
+	const clientId = getClientId(req);
 	const dmClientId = database.getDmClientId();
 
 	if (clientId !== dmClientId) {

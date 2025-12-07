@@ -18,7 +18,11 @@
 	reverse_proxy /auth/* server:3001
 	reverse_proxy /data/* server:3001
 	reverse_proxy /claims/* server:3001
+	reverse_proxy /heroes/* server:3001
+	reverse_proxy /names server:3001
+	reverse_proxy /reset server:3001
 	reverse_proxy /room/* server:3001
+	reverse_proxy /director/* server:3001
 
 	# Proxy WebSocket
 	reverse_proxy /ws server:3001
