@@ -15,11 +15,11 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Final stage - just the built files (Caddy will serve them)
+# Final stage - copy files to bind mount at runtime
 FROM alpine:latest
 
-# Copy built assets
-COPY --from=builder /app/dist /srv/forgesteel
+# Copy built assets to a staging location
+COPY --from=builder /app/dist /build
 
-# This image is just a data container; Caddy mounts /srv
-CMD ["echo", "Static files ready in /srv/forgesteel"]
+# At runtime, copy from staging to the mounted volume
+CMD cp -r /build/* /srv/forgesteel/ && echo "Static files ready in /srv/forgesteel"

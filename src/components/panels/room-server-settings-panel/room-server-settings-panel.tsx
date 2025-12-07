@@ -28,7 +28,7 @@ export const RoomServerSettingsPanel = (props: Props) => {
 	useEffect(() => {
 		setConnectionSettings(Utils.copy(props.connectionSettings));
 		setConnectionSettingsChanged(false);
-	}, [ props.connectionSettings.authToken, props.connectionSettings.authenticatedUser?.id, props.connectionSettings.clientId, props.connectionSettings.role ]);
+	}, [ props.connectionSettings.authToken, props.connectionSettings.authenticatedUser?.id, props.connectionSettings.clientId, props.connectionSettings.role, props.connectionSettings.roomServerHost ]);
 
 	// Fetch director status when authenticated
 	useEffect(() => {
@@ -288,14 +288,14 @@ export const RoomServerSettingsPanel = (props: Props) => {
 				<>
 					<HeaderText>Server Address</HeaderText>
 					<Input
-						placeholder='http://192.168.1.100:3001'
+						placeholder='https://your-server.com'
 						allowClear={true}
 						value={connectionSettings.roomServerHost}
 						onChange={e => setRoomServerHost(e.target.value)}
 						disabled={isAuthenticated}
 					/>
 					<div className='ds-text' style={{ fontSize: '12px', opacity: 0.7 }}>
-						Enter the address of the room server (e.g., http://192.168.1.100:3001)
+						Enter the address of the room server (e.g., https://your-server.com)
 					</div>
 				</>
 			)}

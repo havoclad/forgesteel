@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.client
     volumes:
-      - client-dist:/srv/forgesteel
+      - ./docker-dist:/srv/forgesteel
 
   # Caddy reverse proxy with automatic HTTPS
   caddy:
@@ -17,7 +17,7 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - client-dist:/srv/forgesteel:ro
+      - ./docker-dist:/srv/forgesteel:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
@@ -42,7 +42,6 @@ services:
       - server-data:/app/data
 
 volumes:
-  client-dist:
   server-data:
   caddy-data:
   caddy-config:
