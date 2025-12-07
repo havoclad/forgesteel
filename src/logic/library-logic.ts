@@ -12,6 +12,7 @@ import { EncounterLogic } from '@/logic/encounter-logic';
 import { HeroClass } from '@/models/class';
 import { Imbuement } from '@/models/imbuement';
 import { Item } from '@/models/item';
+import { ItemType } from '@/enums/item-type';
 import { Kit } from '@/models/kit';
 import { Monster } from '@/models/monster';
 import { MonsterFilter } from '@/models/filter';
