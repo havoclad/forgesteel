@@ -2,6 +2,9 @@
 	# Redirect root to /forgesteel/
 	redir / /forgesteel/ permanent
 
+	# Redirect /forgesteel (no trailing slash) to /forgesteel/
+	redir /forgesteel /forgesteel/ permanent
+
 	# Serve the app at /forgesteel/
 	handle_path /forgesteel/* {
 		root * /srv/forgesteel

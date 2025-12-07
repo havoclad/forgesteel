@@ -68,13 +68,14 @@ export const RoomServerSettingsPanel = (props: Props) => {
 		setConnectionSettingsChanged(true);
 	};
 
-	// Normalize the host URL to ensure it has http:// prefix
+	// Normalize the host URL to ensure it has http:// prefix and no trailing slashes
 	const getNormalizedHost = () => {
 		let host = connectionSettings.roomServerHost.trim();
 		if (host && !host.startsWith('http://') && !host.startsWith('https://')) {
 			host = `http://${host}`;
 		}
-		return host;
+		// Remove trailing slashes to prevent double-slash URLs
+		return host.replace(/\/+$/, '');
 	};
 
 	const getSettingsWithNormalizedHost = () => {
