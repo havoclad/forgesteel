@@ -1,0 +1,22 @@
+{$DOMAIN:localhost} {
+	# Redirect root to /forgesteel/
+	redir / /forgesteel/ permanent
+
+	# Serve the app at /forgesteel/
+	handle_path /forgesteel/* {
+		root * /srv/forgesteel
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Proxy all server API routes
+	reverse_proxy /health server:3001
+	reverse_proxy /connect server:3001
+	reverse_proxy /auth/* server:3001
+	reverse_proxy /data/* server:3001
+	reverse_proxy /claims/* server:3001
+	reverse_proxy /room/* server:3001
+
+	# Proxy WebSocket
+	reverse_proxy /ws server:3001
+}

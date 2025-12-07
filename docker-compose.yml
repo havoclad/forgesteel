@@ -1,12 +1,30 @@
 services:
-  client:
+  # Build client assets
+  client-build:
     build:
       context: .
       dockerfile: Dockerfile.client
+    volumes:
+      - client-dist:/srv/forgesteel
+
+  # Caddy reverse proxy with automatic HTTPS
+  caddy:
+    image: caddy:2-alpine
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - client-dist:/srv/forgesteel:ro
+      - caddy-data:/data
+      - caddy-config:/config
     depends_on:
-      - server
+      client-build:
+        condition: service_completed_successfully
+      server:
+        condition: service_started
 
   server:
     build:
@@ -24,4 +42,7 @@ services:
       - server-data:/app/data
 
 volumes:
+  client-dist:
   server-data:
+  caddy-data:
+  caddy-config:
