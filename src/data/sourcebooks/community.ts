@@ -9,6 +9,7 @@ import { DamageType } from '@/enums/damage-type';
 import { FactoryLogic } from '@/logic/factory-logic';
 import { FeatureField } from '@/enums/feature-field';
 import { HeroClass } from '@/models/class';
+import { ConsumableData } from '@/data/items/consumable-data';
 import { LeveledImplementData } from '@/data/items/leveled-implement-data';
 import { PerkList } from '@/enums/perk-list';
 import { SkillList } from '@/enums/skill-list';
@@ -1251,6 +1252,7 @@ export const community: Sourcebook = {
 	encounters: [],
 	imbuements: [],
 	items: [
+		ConsumableData.charmOfSaintVenar,
 		TrinketData.coinOfSteelyMind,
 		TrinketData.eyesOfCharming,
 		TrinketData.figurineOfWondrousPower,

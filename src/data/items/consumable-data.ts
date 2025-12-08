@@ -1,5 +1,6 @@
 import { AbilityKeyword } from '@/enums/ability-keyword';
 import { Characteristic } from '@/enums/characteristic';
+import { FeatureField } from '@/enums/feature-field';
 import { FactoryLogic } from '@/logic/factory-logic';
 import { Item } from '@/models/item';
 import { ItemType } from '@/enums/item-type';
@@ -615,5 +616,44 @@ Each time you use another Breath of Creation, you can create a new demiplane or 
 			goal: 360
 		}),
 		effect: 'When opened as a maneuver, this vial bursts into a storm of multicolored lights. You and each ally within 5 squares of you regain 1d6 Recoveries. However, any mortal using this treasure draws the interest of a powerful fey noble.'
+	});
+
+	static charmOfSaintVenar: Item = FactoryLogic.createItem({
+		id: 'item-charm-of-saint-venar',
+		name: 'Charm of Saint Venar',
+		description: '*From Wrath of the Iresouls*\n\nA wooden necklace with a wolf\'s tooth attached by hardened tree sap.',
+		type: ItemType.Consumable2nd,
+		keywords: [ AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A wolf\'s tooth, hardened tree sap from an ancient tree',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 90
+		}),
+		effect: 'As a maneuver, you pray to Saint Venar, causing the charm to glow dimly until the end of the encounter. While the charm is glowing, you gain the following benefits: Your speed increases by 3, you gain a +5 bonus to distance for your ranged abilities, and when you deal damage to a creature more than 5 squares from you, you gain a surge which you can immediately spend. After this charm is used twice, its magic is expended.',
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.createBonus({
+						id: 'item-charm-of-saint-venar-1',
+						name: '',
+						field: FeatureField.Speed,
+						value: 3
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-charm-of-saint-venar-1a',
+						name: '',
+						keywords: [ AbilityKeyword.Ranged ],
+						value: 5
+					}),
+					FactoryLogic.feature.create({
+						id: 'item-charm-of-saint-venar-1b',
+						name: '',
+						description: 'When you deal damage to a creature more than 5 squares from you, you gain a surge which you can immediately spend.'
+					})
+				]
+			}
+		]
 	});
 }
