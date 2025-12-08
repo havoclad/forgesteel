@@ -9,10 +9,12 @@ import { DamageType } from '@/enums/damage-type';
 import { FactoryLogic } from '@/logic/factory-logic';
 import { FeatureField } from '@/enums/feature-field';
 import { HeroClass } from '@/models/class';
+import { LeveledImplementData } from '@/data/items/leveled-implement-data';
 import { PerkList } from '@/enums/perk-list';
 import { SkillList } from '@/enums/skill-list';
 import { Sourcebook } from '@/models/sourcebook';
 import { SourcebookType } from '@/enums/sourcebook-type';
+import { TrinketData } from '@/data/items/trinket-data';
 
 const aranox: Ancestry = {
 	id: 'aranox',
@@ -1248,7 +1250,12 @@ export const community: Sourcebook = {
 	domains: [],
 	encounters: [],
 	imbuements: [],
-	items: [],
+	items: [
+		TrinketData.coinOfSteelyMind,
+		TrinketData.eyesOfCharming,
+		TrinketData.figurineOfWondrousPower,
+		LeveledImplementData.diademOfCharisma
+	],
 	kits: [],
 	monsterGroups: [],
 	montages: [],

@@ -791,4 +791,119 @@ A trapped spirit remains in the lantern for 10 minutes. They remember being trap
 			}
 		]
 	});
+
+	static coinOfSteelyMind: Item = FactoryLogic.createItem({
+		id: 'item-coin-of-steely-mind',
+		name: 'Coin of Steely Mind',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nA simple coin that seems to shimmer with an inner resolve.',
+		type: ItemType.Trinket1st,
+		keywords: [ AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A coin that has been passed through many hands, steel filings',
+			source: 'Official court documents in Anjali',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 100
+		}),
+		effect: 'While this coin is on your person you succeed on saving throws against charm effects on a 5 or higher.'
+	});
+
+	// Echelon 2
+
+	static eyesOfCharming: Item = FactoryLogic.createItem({
+		id: 'item-eyes-of-charming',
+		name: 'Eyes of Charming',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nThese crystal lenses fit over the eyes. They have 3 charges.',
+		type: ItemType.Trinket2nd,
+		keywords: [ AbilityKeyword.Head, AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'Crystal lenses, essence of a charming creature',
+			source: 'Ancient Lore written in the First Language',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 300
+		}),
+		effect: 'While wearing them, you can expend 1 charge to cast charm person on a creature within 30 feet that you can see and that you share a common language with. The Eyes regain 1d3 expended charges when the wearer finishes a respite (max 3). A charmed creature treats the wearer of the eyes as their ally. The saving throw to resist this charm is harder by 1.',
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-eyes-of-charming-1',
+							name: 'Charm Person',
+							description: 'You focus your gaze through the Eyes of Charming, attempting to charm a creature.',
+							type: FactoryLogic.type.createManeuver({ qualifiers: [ 'Expend 1 charge' ] }),
+							distance: [ FactoryLogic.distance.createRanged(6) ],
+							target: 'One creature you can see and share a common language with',
+							sections: [
+								FactoryLogic.createAbilitySectionRoll(
+									FactoryLogic.createPowerRoll({
+										characteristic: [ Characteristic.Reason ],
+										tier1: 'I<0 the target is charmed (save ends)',
+										tier2: 'I<1 the target is charmed (save ends)',
+										tier3: 'I<2 the target is charmed (save ends)'
+									})
+								),
+								FactoryLogic.createAbilitySectionText('A charmed creature treats the wearer of the eyes as their ally. The saving throw to resist this charm is harder by 1.')
+							]
+						})
+					})
+				]
+			}
+		]
+	});
+
+	static figurineOfWondrousPower: Item = FactoryLogic.createItem({
+		id: 'item-figurine-of-wondrous-power',
+		name: 'Figurine of Wondrous Power',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nA figurine of wondrous power is a statuette of a beast small enough to fit in a pocket. This smoky quartz figurine depicts a bear.',
+		type: ItemType.Trinket2nd,
+		keywords: [ AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A smoky quartz statuette carved in the shape of a bear, essence of a wild bear',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 300
+		}),
+		effect: `If you use a main action to speak the command word and throw the figurine to a point on the ground within 12 squares of you, the figurine becomes a living bear. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.
+
+The bear is friendly to you and your companions. It understands your languages and obeys your spoken commands. If you issue no commands, the bear defends itself but takes no other actions. The bear acts as a follower while it exists.
+
+The bear exists for 1 minute (10 combat rounds). At the end of the duration, the bear reverts to its figurine form. It reverts to a figurine early if it drops to 0 Stamina or if you use a main action to speak the command word again while touching it.
+
+When the creature becomes a figurine again, its property can't be used again until the next dawn.
+
+**Bear Statistics:**
+* **Level 1 Elite Brute** (EV 12)
+* **Size 2** | **Speed 5** | **Stamina 80** | **Stability 0** | **Free Strike 5**
+* **Ability Scores:** Might +1, Agility +2, Reason -2, Intuition +1, Presence +1
+* **Natural Weapon** (Signature, Main action): Melee Strike Weapon, Melee 1, Two creatures or objects
+  * ≤11: 7 damage
+  * 12-16: 10 damage; M<1 prone
+  * 17+: 13 damage; M<1 prone
+* **Ready to Strike** (Maneuver, Self): The bear assesses their environment or lets loose a threatening roar and gains an edge on their next strike.
+* **Quick Strike** (Triggered action): Melee Strike Weapon, Melee 1. Trigger: A creature or object comes within distance. Effect: The bear makes a free strike against the target. If the bear was hidden from the target, the strike deals an extra 3 damage.
+* **Nature's Spirit**: While outdoors or in a natural environment, the bear can negate a bane on their abilities or turn a double bane into a bane.
+* **Climbing (1 Point)**: The bear can automatically climb at full speed while moving.
+* **Unrelenting (2 Points)**: Once per combat, when the bear is reduced to 0 Stamina, they can choose to either remain alive with 1 Stamina or immediately move up to their speed and make a free strike before dying.`,
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-figurine-of-wondrous-power-1',
+							name: 'Summon Bear',
+							description: 'You speak the command word and throw the figurine, causing it to transform into a living bear.',
+							type: FactoryLogic.type.createMain(),
+							distance: [ FactoryLogic.distance.createRanged(12) ],
+							target: 'One unoccupied space within range',
+							sections: [
+								FactoryLogic.createAbilitySectionText('The figurine becomes a living bear in the target space. The bear is friendly to you and your companions, understands your languages, and obeys your spoken commands. If you issue no commands, the bear defends itself but takes no other actions. The bear acts as a follower while it exists. The bear exists for 1 minute (10 combat rounds), then reverts to its figurine form. It reverts early if it drops to 0 Stamina or if you use a main action to speak the command word again while touching it. Once used, the figurine can\'t be used again until the next dawn.')
+							]
+						})
+					})
+				]
+			}
+		]
+	});
 }

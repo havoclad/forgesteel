@@ -489,4 +489,96 @@ export class LeveledImplementData {
 			}
 		]
 	});
+
+	static diademOfCharisma: Item = FactoryLogic.createItem({
+		id: 'item-diadem-of-charisma',
+		name: 'Diadem of Charisma',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nAn elegant diadem that seems to enhance the wearer\'s natural charm and presence.',
+		type: ItemType.LeveledImplement,
+		keywords: [ AbilityKeyword.Implement, AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A diadem or crown, essence of a charismatic leader',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 450
+		}),
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-1a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-1b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createCharacteristicBonus({
+						id: 'item-diadem-of-charisma-1c',
+						name: 'Presence Enhancement I',
+						description: 'While wearing this diadem, you gain a +1 bonus to your Presence ability score.',
+						characteristic: Characteristic.Presence,
+						value: 1
+					})
+				]
+			},
+			{
+				level: 5,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-5a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-5b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createCharacteristicBonus({
+						id: 'item-diadem-of-charisma-5c',
+						name: 'Presence Enhancement II',
+						description: 'Your Presence ability score increases by 1 (Total +2 bonus to Presence).',
+						characteristic: Characteristic.Presence,
+						value: 1
+					}),
+					FactoryLogic.feature.create({
+						id: 'item-diadem-of-charisma-5d',
+						name: 'Awe of Charm',
+						description: 'You gain an Edge (+2 bonus) on Presence tests made to win other creatures over or make a good impression. This generally applies to interpersonal actions using skills like Persuade or Flirt.'
+					})
+				]
+			},
+			{
+				level: 9,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-9a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-diadem-of-charisma-9b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createCharacteristicBonus({
+						id: 'item-diadem-of-charisma-9c',
+						name: 'Presence Enhancement III',
+						description: 'Your Presence ability score increases by 1 (Total +3 bonus to Presence).',
+						characteristic: Characteristic.Presence,
+						value: 1
+					}),
+					FactoryLogic.feature.create({
+						id: 'item-diadem-of-charisma-9d',
+						name: 'Ultimate Charisma',
+						description: 'You have a Double Edge on all Presence tests made to influence other creatures.'
+					})
+				]
+			}
+		]
+	});
 }
