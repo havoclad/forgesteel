@@ -581,4 +581,85 @@ export class LeveledImplementData {
 			}
 		]
 	});
+
+	static voidAmulet: Item = FactoryLogic.createItem({
+		id: 'item-void-amulet',
+		name: 'Void Amulet',
+		description: '*From Wrath of the Iresouls*\n\nLeft behind by a wicked elementalist, its wearer can feel the space around them stretch and contract at their whim.',
+		type: ItemType.LeveledImplement,
+		keywords: [ AbilityKeyword.Implement, AbilityKeyword.Magic, AbilityKeyword.Void ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A meteorite of another world infused with void magic',
+			source: 'Texts in Urollialic',
+			characteristic: [ Characteristic.Reason, Characteristic.Intuition, Characteristic.Presence ],
+			goal: 450
+		}),
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.create({
+						id: 'item-void-amulet-1',
+						name: '',
+						description: 'Your magic and psionic abilities ignore cover and concealment.'
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-1a',
+						name: '',
+						keywords: [ AbilityKeyword.Magic, AbilityKeyword.Area ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-1b',
+						keywords: [ AbilityKeyword.Psionic, AbilityKeyword.Area ],
+						value: 1
+					})
+				]
+			},
+			{
+				level: 5,
+				features: [
+					FactoryLogic.feature.create({
+						id: 'item-void-amulet-5',
+						name: '',
+						description: 'At the start of your turn, you can teleport 2 squares (no action required).'
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-5a',
+						name: '',
+						keywords: [ AbilityKeyword.Magic, AbilityKeyword.Area ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-5b',
+						name: '',
+						keywords: [ AbilityKeyword.Psionic, AbilityKeyword.Area ],
+						value: 1
+					})
+				]
+			},
+			{
+				level: 9,
+				features: [
+					FactoryLogic.feature.create({
+						id: 'item-void-amulet-9',
+						name: '',
+						description: 'The distance you can teleport at the start of your turn increases to 5 squares. Additionally, you can see through all mundane objects and always have line of effect to a creature or square.'
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-9a',
+						name: '',
+						keywords: [ AbilityKeyword.Magic, AbilityKeyword.Area ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDistance({
+						id: 'item-void-amulet-9b',
+						name: '',
+						keywords: [ AbilityKeyword.Psionic, AbilityKeyword.Area ],
+						value: 1
+					})
+				]
+			}
+		]
+	});
 }

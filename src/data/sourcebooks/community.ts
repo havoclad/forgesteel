@@ -1254,7 +1254,8 @@ export const community: Sourcebook = {
 		TrinketData.coinOfSteelyMind,
 		TrinketData.eyesOfCharming,
 		TrinketData.figurineOfWondrousPower,
-		LeveledImplementData.diademOfCharisma
+		LeveledImplementData.diademOfCharisma,
+		LeveledImplementData.voidAmulet
 	],
 	kits: [],
 	monsterGroups: [],
