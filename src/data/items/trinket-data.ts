@@ -1017,7 +1017,7 @@ Once per turn when you or an ally within 10 squares of you makes a melee strike,
 
 	static figurineOfWondrousPower: Item = FactoryLogic.createItem({
 		id: 'item-figurine-of-wondrous-power',
-		name: 'Figurine of Wondrous Power',
+		name: 'Figurine of Wondrous Power - Brown Bear',
 		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nA figurine of wondrous power is a statuette of a beast small enough to fit in a pocket. This smoky quartz figurine depicts a bear.',
 		type: ItemType.Trinket2nd,
 		keywords: [ AbilityKeyword.Magic ],
@@ -1068,5 +1068,35 @@ When the creature becomes a figurine again, its property can't be used again unt
 				]
 			}
 		]
+	});
+
+	static ironRing: Item = FactoryLogic.createItem({
+		id: 'item-iron-ring',
+		name: 'Iron Ring',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nThis ring depicts a bat upon a tree, the insignia of Dorian Morkoth\'s minor noble house. While nonmagical, wearing this ring grants advantage on Charisma (Persuasion) checks when dealing with nobles, but subjects the wearer to disadvantage on Charisma (Persuasion) checks when dealing with common folk.',
+		type: ItemType.Trinket1st,
+		keywords: [ AbilityKeyword.Ring ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'An iron ring, knowledge of noble house insignias',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Presence ],
+			goal: 100
+		}),
+		effect: 'While wearing this ring, you gain an edge on Presence tests made to persuade nobles, but you take a bane on Presence tests made to persuade common folk.'
+	});
+
+	static glovesOfClimbingAndSwimming: Item = FactoryLogic.createItem({
+		id: 'item-gloves-of-climbing-and-swimming',
+		name: 'Gloves of Climbing and Swimming',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nThese supple leather gloves enhance the wearer\'s ability to climb and swim.',
+		type: ItemType.Trinket1st,
+		keywords: [ AbilityKeyword.Hands, AbilityKeyword.Magic ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'Leather gloves, essence of a mountain goat and a dolphin',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Agility, Characteristic.Might ],
+			goal: 100
+		}),
+		effect: 'While wearing these gloves, you gain the swim and climb speeds but no other benefits like water breathing or fighting while climbing.'
 	});
 }

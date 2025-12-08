@@ -1,3 +1,4 @@
+import { AbilityDistanceType } from '@/enums/abiity-distance-type';
 import { AbilityKeyword } from '@/enums/ability-keyword';
 import { Characteristic } from '@/enums/characteristic';
 import { DamageModifierType } from '@/enums/damage-modifier-type';
@@ -920,6 +921,185 @@ This long, ornate rod with a silver bulb head is braided with 33 green cords. A 
 						name: '',
 						keywords: [ AbilityKeyword.Psionic, AbilityKeyword.Area ],
 						value: 1
+					})
+				]
+			}
+		]
+	});
+
+	static webOfForms: Item = FactoryLogic.createItem({
+		id: 'item-web-of-forms',
+		name: 'Web of Forms',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nA wand carved from spider silk and hardened resin, pulsing with arachnid energy.',
+		type: ItemType.LeveledImplement,
+		keywords: [ AbilityKeyword.Implement, AbilityKeyword.Magic, AbilityKeyword.Psionic, AbilityKeyword.Wand ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'Spider silk from a giant spider, resin from a web tree',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Intuition ],
+			goal: 450
+		}),
+		featuresByLevel: [
+			{
+				level: 1,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-1a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-1b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-1c',
+							name: 'Spider Stride',
+							description: 'You gain the ability to climb like a spider.',
+							type: FactoryLogic.type.createManeuver(),
+							distance: [ FactoryLogic.distance.createSelf() ],
+							target: 'Self',
+							sections: [
+								FactoryLogic.createAbilitySectionText('You gain Spider Climb until the end of the encounter or willingly dismissed (no action required).')
+							]
+						})
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-1d',
+							name: 'Polymorph Giant Spider',
+							description: 'You transform a creature into a giant spider.',
+							type: FactoryLogic.type.createMain(),
+							keywords: [ AbilityKeyword.Strike, AbilityKeyword.Magic, AbilityKeyword.Psionic ],
+							distance: [ FactoryLogic.distance.createRanged(10) ],
+							target: 'One creature',
+							cost: 5,
+							sections: [
+								FactoryLogic.createAbilitySectionRoll(
+									FactoryLogic.createPowerRoll({
+										characteristic: [ Characteristic.Might, Characteristic.Agility, Characteristic.Reason, Characteristic.Intuition, Characteristic.Presence ],
+										tier1: 'The target takes 3 psychic damage',
+										tier2: 'The target takes 5 psychic damage',
+										tier3: 'The target is transformed into a giant spider (Save Ends)'
+									})
+								),
+								FactoryLogic.createAbilitySectionText('The target\'s game statistics are replaced by that of a Giant Spider. They can\'t talk but can understand languages they knew before transforming. All items are transformed with them and cannot be used until the transformation is reversed.')
+							]
+						})
+					})
+				]
+			},
+			{
+				level: 5,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-5a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-5b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-5c',
+							name: 'Throw Arachnid',
+							description: 'You hurl a web-wrapped projectile at your enemies.',
+							type: FactoryLogic.type.createMain(),
+							keywords: [ AbilityKeyword.Ranged, AbilityKeyword.Strike ],
+							distance: [ FactoryLogic.distance.createRanged(10) ],
+							target: 'One or Two creatures',
+							cost: 3,
+							sections: [
+								FactoryLogic.createAbilitySectionRoll(
+									FactoryLogic.createPowerRoll({
+										characteristic: [ Characteristic.Might, Characteristic.Agility, Characteristic.Reason, Characteristic.Intuition, Characteristic.Presence ],
+										tier1: '7 Corruption Damage; The target is bleeding (EoT)',
+										tier2: '9 Corruption Damage; The target is bleeding (Save Ends)',
+										tier3: '12 Corruption Damage; The target is bleeding and weakened (Save Ends)'
+									})
+								)
+							]
+						})
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-5d',
+							name: 'Entangling Web',
+							description: 'You create a web that entangles your enemies.',
+							type: FactoryLogic.type.createMain(),
+							keywords: [ AbilityKeyword.Area, AbilityKeyword.Magic, AbilityKeyword.Psionic ],
+							distance: [ FactoryLogic.distance.create({ type: AbilityDistanceType.Burst, value: 3, within: 5 }) ],
+							target: 'Each enemy in burst',
+							cost: 5,
+							sections: [
+								FactoryLogic.createAbilitySectionRoll(
+									FactoryLogic.createPowerRoll({
+										characteristic: [ Characteristic.Might, Characteristic.Agility, Characteristic.Reason, Characteristic.Intuition, Characteristic.Presence ],
+										tier1: 'M<weak slow (save ends)',
+										tier2: 'M<avg slow and restrained (EoT)',
+										tier3: 'M<strong slow and restrained (save ends)'
+									})
+								)
+							]
+						})
+					})
+				]
+			},
+			{
+				level: 9,
+				features: [
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-9a',
+						keywords: [ AbilityKeyword.Magic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbilityDamage({
+						id: 'item-web-of-forms-9b',
+						keywords: [ AbilityKeyword.Psionic ],
+						value: 1
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-9c',
+							name: 'Web Slinger Leap',
+							description: 'You cast a web and teleport to your destination.',
+							type: FactoryLogic.type.createMove(),
+							keywords: [ AbilityKeyword.Psionic ],
+							distance: [ FactoryLogic.distance.createSelf() ],
+							target: 'Self',
+							cost: 2,
+							sections: [
+								FactoryLogic.createAbilitySectionText('You cast a string of web to a solid surface within 15 squares and teleport to the destination. If the surface was vertical you are climbing, if a ceiling you fall unless you can climb on ceilings. Pay 4HR instead to use this as a free maneuver once per turn.')
+							]
+						})
+					}),
+					FactoryLogic.feature.createAbility({
+						ability: FactoryLogic.createAbility({
+							id: 'item-web-of-forms-9d',
+							name: 'Venomous Weakness',
+							description: 'You strike with venomous energy that weakens your target.',
+							type: FactoryLogic.type.createMain(),
+							keywords: [ AbilityKeyword.Ranged, AbilityKeyword.Magic, AbilityKeyword.Psionic, AbilityKeyword.Strike ],
+							distance: [ FactoryLogic.distance.createRanged(10) ],
+							target: 'One creature',
+							cost: 7,
+							sections: [
+								FactoryLogic.createAbilitySectionRoll(
+									FactoryLogic.createPowerRoll({
+										characteristic: [ Characteristic.Might, Characteristic.Agility, Characteristic.Reason, Characteristic.Intuition, Characteristic.Presence ],
+										tier1: '17 Poison Damage; R<weak weakened (save ends)',
+										tier2: '22 Poison Damage; R<avg weakened (save ends)',
+										tier3: '27 Poison Damage; R<strong weakened and dazed (save ends)'
+									})
+								),
+								FactoryLogic.createAbilitySectionText('If the target is weakened they take a bane on all power rolls targeting any spider creatures until the effect ends.')
+							]
+						})
 					})
 				]
 			}

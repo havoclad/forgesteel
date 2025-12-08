@@ -656,4 +656,34 @@ Each time you use another Breath of Creation, you can create a new demiplane or 
 			}
 		]
 	});
+
+	static potionOfWebSlinging: Item = FactoryLogic.createItem({
+		id: 'item-potion-of-web-slinging',
+		name: 'Potion of Web Slinging',
+		description: '*From the Lost Adventures Vol 1 - 3d printed tabletop*\n\nA viscous potion that glimmers with silvery threads.',
+		type: ItemType.Consumable2nd,
+		keywords: [ AbilityKeyword.Magic, AbilityKeyword.Potion ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'Spider silk, essence of a web-spinner',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Intuition ],
+			goal: 45
+		}),
+		effect: 'For 1 hour or until used once, after drinking this potion the hero can sling a web up to 20 squares that must attach to a solid surface, then they are pulled along a straight line including vertically if they are size 1L or smaller. After reaching the attachment point the web disappears. If not on a stable horizontal surface the hero can make a hard Agility or Might test to grab on.'
+	});
+
+	static healingApple: Item = FactoryLogic.createItem({
+		id: 'item-healing-apple',
+		name: 'Healing Apple',
+		description: '*From Wrath of the Iresouls*\n\nA crisp red apple that glows faintly with healing energy.',
+		type: ItemType.Consumable1st,
+		keywords: [ AbilityKeyword.Magic, AbilityKeyword.Potion ],
+		crafting: FactoryLogic.createProject({
+			prerequisites: 'A perfect apple, essence of healing',
+			source: 'Texts or lore in Caelian',
+			characteristic: [ Characteristic.Reason, Characteristic.Intuition ],
+			goal: 45
+		}),
+		effect: 'When you consume this apple as a maneuver, you regain Stamina equal to your recovery value without spending a Recovery. This apple disappears when used or at the start of your next respite.'
+	});
 }

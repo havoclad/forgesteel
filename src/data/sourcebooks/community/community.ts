@@ -1253,11 +1253,16 @@ export const community: Sourcebook = {
 	imbuements: [],
 	items: [
 		ConsumableData.charmOfSaintVenar,
+		ConsumableData.healingApple,
+		ConsumableData.potionOfWebSlinging,
 		TrinketData.coinOfSteelyMind,
 		TrinketData.eyesOfCharming,
 		TrinketData.figurineOfWondrousPower,
+		TrinketData.ironRing,
+		TrinketData.glovesOfClimbingAndSwimming,
 		LeveledImplementData.diademOfCharisma,
-		LeveledImplementData.voidAmulet
+		LeveledImplementData.voidAmulet,
+		LeveledImplementData.webOfForms
 	],
 	kits: [],
 	monsterGroups: [],
