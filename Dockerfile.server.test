@@ -1,0 +1,22 @@
+# Test Dockerfile for server - runs tests
+FROM node:20-alpine
+
+# Install build tools for better-sqlite3
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy package files
+COPY server/package.json server/package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source files
+COPY server/src ./src
+COPY server/tsconfig.json ./
+COPY server/vitest.config.ts ./
+
+# Run tests
+CMD ["npm", "test"]
+
