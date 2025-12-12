@@ -14,6 +14,10 @@ export class ConnectionSettingsUpdateLogic {
 			settings.warehouseToken = '';
 		}
 
+		if (settings.patreonConnected === undefined) {
+			settings.patreonConnected = false;
+		}
+
 		if (settings.useRoomServer === undefined) {
 			settings.useRoomServer = false;
 		}

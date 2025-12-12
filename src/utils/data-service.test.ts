@@ -17,10 +17,11 @@ afterEach(() => {
 vi.mock('axios');
 vi.mock('localforage');
 
-const useLocalSettings: ConnectionSettings = {
+const defaultSettings: ConnectionSettings = {
 	useWarehouse: false,
 	warehouseHost: '',
 	warehouseToken: '',
+	patreonConnected: false,
 	useRoomServer: false,
 	roomServerHost: ''
 };
@@ -39,7 +40,7 @@ describe('DataService', () => {
 	// #region Options
 	describe('getOptions', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockOptions));
 
@@ -55,7 +56,7 @@ describe('DataService', () => {
 
 	describe('saveOptions', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockOptions));
 
@@ -73,7 +74,7 @@ describe('DataService', () => {
 	// #region Heroes
 	describe('getHeroes', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockHeroes));
 
@@ -87,7 +88,7 @@ describe('DataService', () => {
 		});
 
 		test('gets a JWT and calls the Warehouse when configured to do so', async () => {
-			const connSettings: ConnectionSettings = {
+			const connSettings = { ...defaultSettings,
 				useWarehouse: true,
 				warehouseHost: 'http://test-fake-host',
 				warehouseToken: 'abcd123',
@@ -127,7 +128,7 @@ describe('DataService', () => {
 
 	describe('saveHeroes', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockHeroes));
 
@@ -141,7 +142,7 @@ describe('DataService', () => {
 		});
 
 		test('calls warehouse if configured', async () => {
-			const connSettings: ConnectionSettings = {
+			const connSettings = { ...defaultSettings,
 				warehouseHost: 'fake-host',
 				useWarehouse: true,
 				warehouseToken: 'abcd123',
@@ -184,7 +185,7 @@ describe('DataService', () => {
 	// #region Playbook
 	describe('getHomebrew', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockHomebrew));
 
@@ -200,7 +201,7 @@ describe('DataService', () => {
 
 	describe('saveHomebrew', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockHomebrew));
 
@@ -218,7 +219,7 @@ describe('DataService', () => {
 	// #region Playbook
 	describe('getPlaybook', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockPlaybook));
 
@@ -234,7 +235,7 @@ describe('DataService', () => {
 
 	describe('savePlaybook', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockPlaybook));
 
@@ -252,7 +253,7 @@ describe('DataService', () => {
 	// #region Session
 	describe('getSession', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockSession));
 
@@ -268,7 +269,7 @@ describe('DataService', () => {
 
 	describe('saveSession', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockSession));
 
@@ -286,7 +287,7 @@ describe('DataService', () => {
 	// #region HiddenSettingIds
 	describe('getHiddenSettingIds', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.getItem = vi.fn().mockImplementation(() => Promise.resolve(mockHiddenSettingIds));
 
@@ -302,7 +303,7 @@ describe('DataService', () => {
 
 	describe('saveHiddenSettingIds', () => {
 		test('calls localforage when configured to not use warehouse', async () => {
-			const ds = new DataService(useLocalSettings);
+			const ds = new DataService(defaultSettings);
 
 			localforage.setItem = vi.fn().mockImplementation(() => Promise.resolve(mockHiddenSettingIds));
 
@@ -316,4 +317,155 @@ describe('DataService', () => {
 		});
 	});
 	// #endregion HiddenSettingIds
+
+	// #region Token Handler
+	describe('getPatreonAuthUrl', () => {
+		test('calls the token handler login/start endpoint', async () => {
+			const ds = new DataService(defaultSettings);
+
+			const catchFn = vi.fn();
+			const thenFn = vi.fn();
+
+			const authUrl = 'https://some.fake/auth/url';
+			const urlResponse = {
+				data: {
+					authorizationUrl: authUrl
+				}
+			};
+
+			axios.post = vi.fn()
+				.mockImplementationOnce(() => Promise.resolve(urlResponse));
+
+			await ds.getPatreonAuthUrl()
+				.then(thenFn)
+				.catch(catchFn);
+
+			expect(thenFn).toHaveBeenCalledWith(authUrl);
+			expect(catchFn).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('finishPatreonLogin', () => {
+		test('returns a successful login correctly', async () => {
+			const catchFn = vi.fn();
+			const thenFn = vi.fn();
+
+			const sessionResponse = {
+				data: {
+					authenticated_with_patreon: true,
+					user: {
+						mcdm: {
+							patron: true,
+							tier_cents: 800,
+							start: 'Wed, 14 Feb 2024 00:00:00 GMT'
+						}
+					}
+				}
+			};
+
+			axios.post = vi.fn()
+				.mockImplementationOnce(() => Promise.resolve(sessionResponse));
+
+			const ds = new DataService(defaultSettings);
+
+			await ds.finishPatreonLogin('some_code', 'some_state')
+				.then(thenFn)
+				.catch(catchFn);
+
+			expect(thenFn.mock.lastCall).toEqual([ {
+				authenticated: true,
+				connections: [
+					{
+						name: 'MCDM Patreon',
+						status: {
+							patron: true,
+							tier_cents: 800,
+							start: 'Wed, 14 Feb 2024 00:00:00 GMT'
+						}
+					}
+				]
+			} ]);
+			expect(catchFn).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('getPatreonSession', () => {
+		test('returns a logged in session correctly', async () => {
+			const connSettings = { ...defaultSettings,
+				patreonConnected: true
+			};
+
+			const catchFn = vi.fn();
+			const thenFn = vi.fn();
+
+			const sessionResponse = {
+				data: {
+					authenticated_with_patreon: true,
+					user: {
+						mcdm: {
+							patron: false,
+							tier_cents: 0,
+							start: null
+						}
+					}
+				}
+			};
+
+			axios.get = vi.fn()
+				.mockImplementationOnce(() => Promise.resolve(sessionResponse));
+
+			const ds = new DataService(connSettings);
+
+			await ds.getPatreonSession()
+				.then(thenFn)
+				.catch(catchFn);
+
+			expect(thenFn.mock.lastCall).toEqual([ {
+				authenticated: true,
+				connections: [
+					{
+						name: 'MCDM Patreon',
+						status: {
+							patron: false,
+							tier_cents: 0,
+							start: null
+						}
+					}
+				]
+			} ]);
+			expect(catchFn).not.toHaveBeenCalled();
+		});
+
+		test('returns a NON logged in session correctly', async () => {
+			const connSettings = { ...defaultSettings,
+				patreonConnected: true
+			};
+
+			const catchFn = vi.fn();
+			const thenFn = vi.fn();
+
+			const sessionResponse = {
+				data: {
+					authenticated_with_patreon: false,
+					user: null
+				}
+			};
+
+			axios.get = vi.fn()
+				.mockImplementationOnce(() => Promise.resolve(sessionResponse));
+
+			const ds = new DataService(connSettings);
+
+			await ds.getPatreonSession()
+				.then(thenFn)
+				.catch(catchFn);
+
+			expect(thenFn.mock.lastCall).toEqual([ {
+				authenticated: false,
+				connections: []
+			} ]);
+			expect(catchFn).not.toHaveBeenCalled();
+		});
+	});
+	// #endregion Token Handler
 });
