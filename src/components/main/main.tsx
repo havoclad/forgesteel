@@ -78,6 +78,7 @@ import { TacticalMap } from '@/models/tactical-map';
 import { Terrain } from '@/models/terrain';
 import { TerrainModal } from '@/components/modals/terrain/terrain-modal';
 import { Title } from '@/models/title';
+import { TransferPage } from '../pages/transfer/transfer-page';
 import { Utils } from '@/utils/utils';
 import { WelcomePage } from '@/components/pages/welcome/welcome-page';
 import { AuthCallbackPage } from '@/components/pages/auth-callback/auth-callback-page';
@@ -589,7 +590,7 @@ export const Main = (props: Props) => {
 				imbuement.id = Utils.guid();
 			} else {
 				imbuement = FactoryLogic.createImbuement({
-					type: ItemType.Consumable,
+					type: ItemType.Consumable1st,
 					crafting: FactoryLogic.createProject({}),
 					level: 1,
 					feature: FactoryLogic.feature.create({
@@ -614,7 +615,7 @@ export const Main = (props: Props) => {
 					id: Utils.guid(),
 					name: '',
 					description: '',
-					type: ItemType.Consumable,
+					type: ItemType.Consumable1st,
 					crafting: FactoryLogic.createProject({})
 				});
 			}
@@ -1904,6 +1905,19 @@ export const Main = (props: Props) => {
 						/>
 					}
 				/>
+				<Route path='transfer'>
+					<Route
+						index={true}
+						element={
+							<TransferPage
+								connectionSettings={connectionSettings}
+								heroes={heroes}
+								homebrewSourcebooks={homebrewSourcebooks}
+								options={options}
+							/>
+						}
+					/>
+				</Route>
 				<Route path='*' element={<Navigate to='/' replace={true} />} />
 			</Routes>
 			{notifyContext}

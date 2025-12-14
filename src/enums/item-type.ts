@@ -1,6 +1,5 @@
 export enum ItemType {
 	Artifact = 'Artifact',
-	Consumable = 'Consumable Item',
 	Consumable1st = 'Consumable (1st echelon)',
 	Consumable2nd = 'Consumable (2nd echelon)',
 	Consumable3rd = 'Consumable (3rd echelon)',

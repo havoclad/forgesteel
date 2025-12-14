@@ -6,7 +6,7 @@ import { Item } from '@/models/item';
 import { ItemType } from '@/enums/item-type';
 
 export class ConsumableData {
-	// Echelon 1
+	// #region Echelon 1
 
 	static blackAshDart: Item = FactoryLogic.createItem({
 		id: 'item-black-ash-dart',
@@ -274,7 +274,9 @@ Small lightning bolts arc around the black cloud in this sphere, which creates a
 		effect: 'As a maneuver, you sniff a magic snapdragon blossom, causing it to whither and making your movements more forceful and explosive. The next damage-dealing ability you use deals an extra 5 damage and gains a +2 bonus to the distance of any forced movement it imposes. If the ability does not impose forced movement, you can push each creature targeted by the ability up to 2 squares.'
 	});
 
-	// Echelon 2
+	// #endregion
+
+	// #region Echelon 2
 
 	static breathofDawn: Item = FactoryLogic.createItem({
 		id: 'item-breath-of-dawn',
@@ -423,7 +425,9 @@ If you pull a size 1T object adjacent to you, you can catch it.`
 		effect: 'As a maneuver, you throw this vial up to 10 squares, destroying the vial and creating a 2-cube ethereal vortex centered on the spot where it lands. The vortex dissipates at the end of the encounter or when you dismiss it (no action required). Any creature who enters the vortex for the first time in a combat round or starts their turn there takes 10 psychic damage. At the start of each of your turns, you can move the vortex up to 5 squares (no action required).'
 	});
 
-	// Echelon 3
+	// #endregion
+
+	// #region Echelon 3
 
 	static anamorphicLarva: Item = FactoryLogic.createItem({
 		id: 'item-anamorphic-larva',
@@ -553,7 +557,9 @@ As a maneuver, you make a ranged free strike using the Timesplitter, which shatt
 		effect: 'When you drink this tonic as a maneuver, you feel a surge of physical and spiritual immunity. You can immediately end up to three conditions or effects affecting you. Additionally, until the start of your next turn, you can ignore any effect that would last until the end of your next turn or be ended by a saving throw.'
 	});
 
-	// Echelon 4
+	// #endregion
+
+	// #region Echelon 4
 
 	static breathofCreation: Item = FactoryLogic.createItem({
 		id: 'item-breath-of-creation',
@@ -686,4 +692,6 @@ Each time you use another Breath of Creation, you can create a new demiplane or 
 		}),
 		effect: 'When you consume this apple as a maneuver, you regain Stamina equal to your recovery value without spending a Recovery. This apple disappears when used or at the start of your next respite.'
 	});
+
+	// #endregion
 }
