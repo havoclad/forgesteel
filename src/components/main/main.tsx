@@ -7,6 +7,7 @@ import { AbilityModal } from '@/components/modals/ability/ability-modal';
 import { AboutModal } from '@/components/modals/about/about-modal';
 import { Adventure } from '@/models/adventure';
 import { AdventureLogic } from '@/logic/adventure-logic';
+import { Analytics } from '@/utils/analytics';
 import { Ancestry } from '@/models/ancestry';
 import { AuthPage } from '../pages/auth/auth-page';
 import { BackupPage } from '@/components/pages/backup/backup-page';
@@ -153,12 +154,16 @@ export const Main = (props: Props) => {
 
 	const persistHero = (hero: Hero) => {
 		if (heroes.some(h => h.id === hero.id)) {
+			Analytics.logHeroEdited(hero);
+
 			const copy = Utils.copy(heroes);
 			const list = copy.map(h => h.id === hero.id ? hero : h);
 
 			return persistHeroes(list);
 		}
 		else {
+			Analytics.logHeroCreated(hero);
+
 			const copy = Utils.copy(heroes);
 			copy.push(hero);
 			Collections.sort(copy, h => h.name);
@@ -1074,6 +1079,8 @@ export const Main = (props: Props) => {
 	};
 
 	const saveLibraryElement = (kind: SourcebookElementKind, sourcebookID: string, element: Element) => {
+		Analytics.logHomebrewEdited(kind, element);
+
 		const copy = Utils.copy(homebrewSourcebooks);
 		const sourcebook = copy.find(sb => sb.id === sourcebookID);
 		if (sourcebook) {
