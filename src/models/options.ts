@@ -2,6 +2,8 @@ import { PanelWidth } from '@/enums/panel-width';
 import { SheetPageSize } from '@/enums/sheet-page-size';
 
 export interface Options {
+	// App
+	cookieConsent: boolean;
 	// Hero
 	shownStandardAbilities: string[];
 	xpPerLevel: number;
@@ -9,7 +11,6 @@ export interface Options {
 	singlePage: boolean;
 	separateInventoryFeatures: boolean;
 	showSkillsInGroups: boolean;
-	dimUnavailableAbilities: boolean;
 	showSources: boolean;
 	compactView: boolean;
 	abilityWidth: PanelWidth;
@@ -17,6 +18,7 @@ export interface Options {
 	includePlayState: boolean;
 	classicSheetPageSize: SheetPageSize;
 	colorSheet: boolean;
+	colorScheme: 'community' | 'classic';
 	showPowerRollCalculation: boolean;
 	sheetTextColor: 'light' | 'default' | 'dark';
 	featuresInclude: 'minimal' | 'no-basic' | 'all';

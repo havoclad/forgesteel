@@ -49,6 +49,7 @@ import { ItemType } from '@/enums/item-type';
 import { Kit } from '@/models/kit';
 import { LibraryEditPage } from '@/components/pages/library/library-edit/library-edit-page';
 import { LibraryListPage } from '@/components/pages/library/library-list/library-list-page';
+import { LibraryPrintPage } from '@/components/pages/library/library-print/library-print-page';
 import { MainLayout } from '@/components/main/main-layout';
 import { MinionSlotModal } from '@/components/modals/minion-slot/minion-slot-modal';
 import { Monster } from '@/models/monster';
@@ -181,7 +182,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving heroes',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -190,7 +191,7 @@ export const Main = (props: Props) => {
 				console.error(err);
 				notify.error({
 					title: 'Error saving heroes',
-					description: err,
+					description: Utils.getErrorMessage(err),
 					placement: 'top'
 				});
 			})
@@ -209,7 +210,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving session',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -232,7 +233,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving sourcebooks',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -248,7 +249,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving hidden sourcebooks',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -264,7 +265,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving options',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -280,7 +281,7 @@ export const Main = (props: Props) => {
 					console.error(err);
 					notify.error({
 						title: 'Error saving connection settings',
-						description: err,
+						description: Utils.getErrorMessage(err),
 						placement: 'top'
 					});
 				}
@@ -348,23 +349,27 @@ export const Main = (props: Props) => {
 	};
 
 	const exportHeroPdf = (hero: Hero, resolution: 'standard' | 'high') => {
-		const name = hero.name || 'Unnamed Hero';
-
-		const pageIds: string[] = [];
-		document.querySelectorAll(`[id^=hero-sheet-${hero.id}-page]`).forEach(elem => pageIds.push(elem.id));
-
 		setSpinning(true);
-		Utils.elementsToPdf(pageIds, name, options.classicSheetPageSize, resolution)
-			.then(() => setSpinning(false));
+		Utils.wait(500).then(() => {
+			const name = hero.name || 'Unnamed Hero';
+
+			const pageIds: string[] = [];
+			document.querySelectorAll(`[id^=hero-sheet-${hero.id}-page]`).forEach(elem => pageIds.push(elem.id));
+
+			Utils.elementsToPdf(pageIds, name, options.classicSheetPageSize, resolution)
+				.then(() => setSpinning(false));
+		});
 	};
 
 	const exportStandardAbilities = () => {
-		const pageIds: string[] = [];
-		document.querySelectorAll('[id^=hero-sheet-standard-abilities-page-abilities]').forEach(elem => pageIds.push(elem.id));
-
 		setSpinning(true);
-		Utils.elementsToPdf(pageIds, 'Standard Abilities', options.classicSheetPageSize, 'high')
-			.then(() => setSpinning(false));
+		Utils.wait(500).then(() => {
+			const pageIds: string[] = [];
+			document.querySelectorAll('[id^=hero-sheet-standard-abilities-page-abilities]').forEach(elem => pageIds.push(elem.id));
+
+			Utils.elementsToPdf(pageIds, 'Standard Abilities', options.classicSheetPageSize, 'high')
+				.then(() => setSpinning(false));
+		});
 	};
 
 	const setNotes = (hero: Hero, value: string) => {
@@ -769,6 +774,8 @@ export const Main = (props: Props) => {
 			return title.id;
 		};
 
+		Analytics.logHomebrewCreated(kind);
+
 		const sourcebooks = Utils.copy(homebrewSourcebooks);
 		let sourcebook = sourcebooks.find(sb => sb.id === sourcebookID) || null;
 		if (!sourcebook) {
@@ -1080,7 +1087,7 @@ export const Main = (props: Props) => {
 	};
 
 	const saveLibraryElement = (kind: SourcebookElementKind, sourcebookID: string, element: Element) => {
-		Analytics.logHomebrewEdited(kind, element);
+		Analytics.logHomebrewEdited(kind);
 
 		const copy = Utils.copy(homebrewSourcebooks);
 		const sourcebook = copy.find(sb => sb.id === sourcebookID);
@@ -1281,14 +1288,16 @@ export const Main = (props: Props) => {
 	};
 
 	const exportLibraryElementPdf = (category: string, element: Element, resolution: 'standard' | 'high') => {
-		const name = element.name || `Unnamed ${Format.capitalize(category.split('-').join(' '))}`;
-
-		const pageIds: string[] = [];
-		document.querySelectorAll(`[id^=${category.toLowerCase()}-${element.id}-page]`).forEach(elem => pageIds.push(elem.id));
-
 		setSpinning(true);
-		Utils.elementsToPdf(pageIds, name, options.classicSheetPageSize, resolution)
-			.then(() => setSpinning(false));
+		Utils.wait(500).then(() => {
+			const name = element.name || `Unnamed ${Format.capitalize(category.split('-').join(' '))}`;
+
+			const pageIds: string[] = [];
+			document.querySelectorAll(`[id^=${category.toLowerCase()}-${element.id}-page]`).forEach(elem => pageIds.push(elem.id));
+
+			Utils.elementsToPdf(pageIds, name, options.classicSheetPageSize, resolution)
+				.then(() => setSpinning(false));
+		});
 	};
 
 	// #endregion
@@ -1431,6 +1440,8 @@ export const Main = (props: Props) => {
 	const showAbout = () => {
 		setDrawer(
 			<AboutModal
+				options={options}
+				setOptions={persistOptions}
 				onClose={() => setDrawer(null)}
 			/>
 		);
@@ -1817,6 +1828,16 @@ export const Main = (props: Props) => {
 									showMonster={onSelectMonster}
 									showTerrain={onSelectTerrain}
 									saveChanges={saveLibraryElement}
+								/>
+							}
+						/>
+						<Route
+							path='print/:kind/:sourcebookID/:elementID'
+							element={
+								<LibraryPrintPage
+									heroes={heroes}
+									sourcebooks={SourcebookLogic.getSourcebooks(homebrewSourcebooks)}
+									options={options}
 								/>
 							}
 						/>

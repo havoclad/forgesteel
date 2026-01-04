@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
 import { ConnectionSettings } from '@/models/connection-settings';
 import { Hero } from '@/models/hero';
 import { Options } from '@/models/options';
@@ -6,6 +6,8 @@ import { PatreonSession } from '@/models/patreon-connection';
 import { Playbook } from '@/models/playbook';
 import { Session } from '@/models/session';
 import { Sourcebook } from '@/models/sourcebook';
+import { StorageService } from '@/service/storage/storage-service';
+import { StorageServiceFactory } from '@/service/storage/storage-service-factory';
 import { Utils } from './utils';
 import localforage from 'localforage';
 
@@ -16,63 +18,17 @@ export interface HeroClaim {
 
 export class DataService {
 	settings: ConnectionSettings;
-	readonly host: string;
-	readonly apiToken: string;
-
-	private useNewAuth: boolean;
-	private jwt: string | null;
-	private csrfToken: boolean;
+	readonly storageService: StorageService;
 
 	private tokenHandlerHost: string;
 
 	constructor(settings: ConnectionSettings) {
 		this.settings = settings;
-		this.host = settings.warehouseHost;
-		this.apiToken = settings.warehouseToken;
-
-		this.useNewAuth = false;
-		this.jwt = null;
-		this.csrfToken = false;
+		this.storageService = StorageServiceFactory.fromConnectionSettings(settings);
 
 		const envVal = import.meta.env.VITE_PATREON_TOKEN_HANDLER_HOST;
 		this.tokenHandlerHost = Utils.valueOrDefault(envVal, 'https://forgesteel-warehouse-b7wsk.ondigitalocean.app');
 	};
-
-	private getErrorMessage = (error: unknown) => {
-		let msg = 'Error communicating with FS Warehouse';
-		if (error instanceof AxiosError) {
-			msg = `There was a problem with Forge Steel Warehouse: ${error.message}`;
-			if (error.response) {
-				const code = error.response.status;
-				const respMsg = error.response.data.message ?? error.response.data;
-				msg = `FS Warehouse Error: [${code}] ${respMsg}`;
-
-				if (code === 401) {
-					this.csrfToken = false;
-				}
-			}
-		}
-		return msg;
-	};
-
-	private async checkUseCookieAuth(): Promise<boolean> {
-		// Future work - once Patreon is integrated and backend is on same domain,
-		// use new auth for patreon. Otherwise, use header auth
-		return false;
-	}
-
-	private async ensureJwt() {
-		if (this.jwt === null) {
-			try {
-				const response = await axios.post(`${this.host}/connect`, {}, { headers: { Authorization: `Bearer ${this.apiToken}` } });
-				this.jwt = response.data.access_token;
-			} catch (error) {
-				console.error('Error communicating with FS Warehouse', error);
-				throw new Error(this.getErrorMessage(error), { cause: error });
-			}
-		}
-		return this.jwt;
-	}
 
 	private getRoomHeaders(includeName = false) {
 		const headers: Record<string, string> = {
@@ -92,28 +48,7 @@ export class DataService {
 		return headers;
 	}
 
-	private async ensureCsrf(): Promise<boolean> {
-		axios.defaults.xsrfCookieName = 'csrf_access_token';
-		axios.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
-		if (!this.csrfToken) {
-			try {
-				await axios.post(`${this.host}/connect`, {}, {
-					headers: { Authorization: `Bearer ${this.apiToken}` },
-					withCredentials: true,
-					withXSRFToken: true
-				});
-				this.csrfToken = true;
-			} catch (error) {
-				console.error('Error communicating with FS Warehouse', error);
-				throw new Error(this.getErrorMessage(error), { cause: error });
-			}
-		}
-		return this.csrfToken;
-	}
-
 	private async getLocalOrWarehouse<T>(key: string): Promise<T | null> {
-		axios.defaults.xsrfCookieName = 'csrf_access_token';
-		axios.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
 		if (this.settings.useRoomServer) {
 			try {
 				const response = await axios.get(`${this.settings.roomServerHost}/data/${key}`, {
@@ -125,30 +60,13 @@ export class DataService {
 				throw new Error(this.getRoomErrorMessage(error), { cause: error });
 			}
 		} else if (this.settings.useWarehouse) {
-			let config: AxiosRequestConfig = {
-				withCredentials: true,
-				withXSRFToken: true
-			};
-			if (!this.useNewAuth) {
-				await this.ensureJwt();
-				config = { headers: { Authorization: `Bearer ${this.jwt}` } };
-			}
-
-			try {
-				const response = await axios.get(`${this.host}/data/${key}`, config);
-				return response.data.data;
-			} catch (error) {
-				console.error('Error communicating with FS Warehouse', error);
-				throw new Error(this.getErrorMessage(error), { cause: error });
-			}
+			return this.storageService.get<T>(key);
 		} else {
 			return localforage.getItem<T>(key);
 		}
 	}
 
 	private async putLocalOrWarehouse<T>(key: string, value: T): Promise<T> {
-		axios.defaults.xsrfCookieName = 'csrf_access_token';
-		axios.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
 		if (this.settings.useRoomServer) {
 			try {
 				await axios.put(`${this.settings.roomServerHost}/data/${key}`,
@@ -161,22 +79,7 @@ export class DataService {
 				throw new Error(this.getRoomErrorMessage(error), { cause: error });
 			}
 		} else if (this.settings.useWarehouse) {
-			let config: AxiosRequestConfig = {
-				withCredentials: true,
-				withXSRFToken: true
-			};
-			if (!this.useNewAuth) {
-				await this.ensureJwt();
-				config = { headers: { Authorization: `Bearer ${this.jwt}` } };
-			}
-
-			try {
-				await axios.put(`${this.host}/data/${key}`, value, config);
-				return value;
-			} catch (error) {
-				console.error('Error communicating with FS Warehouse', error);
-				throw new Error(this.getErrorMessage(error), { cause: error });
-			}
+			return this.storageService.put<T>(key, value);
 		} else {
 			return localforage.setItem<T>(key, value);
 		}
@@ -197,14 +100,7 @@ export class DataService {
 
 	async initialize(): Promise<boolean> {
 		if (this.settings.useWarehouse) {
-			this.useNewAuth = await this.checkUseCookieAuth();
-			if (this.useNewAuth) {
-				const connected = await this.ensureCsrf();
-				return connected;
-			} else {
-				await this.ensureJwt();
-				return true;
-			}
+			return this.storageService.initialize();
 		} else {
 			return true;
 		}
@@ -419,6 +315,19 @@ export class DataService {
 	}
 
 	// #region Token Handler (Patreon OAuth)
+	private getErrorMessage = (error: unknown) => {
+		let msg = 'Error communicating with FS Warehouse';
+		if (error instanceof AxiosError) {
+			msg = `There was a problem with Forge Steel Warehouse: ${error.message}`;
+			if (error.response) {
+				const code = error.response.status;
+				const respMsg = error.response.data.message ?? error.response.data.msg ?? error.response.data;
+				msg = `FS Warehouse Error: [${code}] ${respMsg}`;
+			}
+		}
+		return msg;
+	};
+
 	// login start
 	async getPatreonAuthUrl(): Promise<string> {
 		const loginStartUrl = `${this.tokenHandlerHost}/th/login/start`;
@@ -447,6 +356,11 @@ export class DataService {
 				result.authenticated = response.data.authenticated_with_patreon;
 
 				if (response.data.authenticated_with_patreon && response.data.user) {
+					result.connections.push({
+						name: 'Forge Steel Patreon',
+						status: response.data.user.forgesteel
+					});
+
 					result.connections.push({
 						name: 'MCDM Patreon',
 						status: response.data.user.mcdm
@@ -477,6 +391,11 @@ export class DataService {
 
 				if (response.data.authenticated_with_patreon && response.data.user) {
 					result.connections.push({
+						name: 'Forge Steel Patreon',
+						status: response.data.user.forgesteel
+					});
+
+					result.connections.push({
 						name: 'MCDM Patreon',
 						status: response.data.user.mcdm
 					});
@@ -502,7 +421,5 @@ export class DataService {
 			throw new Error(this.getErrorMessage(error), { cause: error });
 		}
 	}
-
-	// refresh?
 	// #endregion
 };

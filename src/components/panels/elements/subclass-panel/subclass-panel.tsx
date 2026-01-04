@@ -1,6 +1,7 @@
 import { CSSProperties, useState } from 'react';
 import { AbilityPanel } from '@/components/panels/elements/ability-panel/ability-panel';
 import { Collections } from '@/utils/collections';
+import { Empty } from '@/components/controls/empty/empty';
 import { ErrorBoundary } from '@/components/controls/error-boundary/error-boundary';
 import { Expander } from '@/components/controls/expander/expander';
 import { FeaturePanel } from '@/components/panels/elements/feature-panel/feature-panel';
@@ -98,6 +99,7 @@ export const SubclassPanel = (props: Props) => {
 						);
 					})
 				}
+				{props.subclass.abilities.length === 0 ? <Empty /> : null}
 			</div>
 		);
 	};
@@ -116,16 +118,21 @@ export const SubclassPanel = (props: Props) => {
 				break;
 		}
 
+		const pages = [
+			{ value: 'overview', label: 'Overview' },
+			{ value: 'features', label: 'Features' }
+		];
+
+		if (props.subclass.abilities.length > 0) {
+			pages.push({ value: 'abilities', label: 'Abilities' });
+		}
+
 		return (
 			<>
 				<Segmented
 					style={{ marginBottom: '20px' }}
 					block={true}
-					options={[
-						{ value: 'overview', label: 'Overview' },
-						{ value: 'features', label: 'Features' },
-						{ value: 'abilities', label: 'Abilities' }
-					]}
+					options={pages}
 					value={page}
 					onChange={setPage}
 					onClick={e => e.stopPropagation()}

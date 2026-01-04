@@ -105,6 +105,7 @@ export const ClassPanel = (props: Props) => {
 						);
 					})
 				}
+				{props.heroClass.abilities.length === 0 ? <Empty /> : null}
 			</div>
 		);
 	};
@@ -145,17 +146,25 @@ export const ClassPanel = (props: Props) => {
 				break;
 		}
 
+		const pages = [
+			{ value: 'overview', label: 'Overview' },
+			{ value: 'features', label: 'Features' }
+		];
+
+		if (props.heroClass.abilities.length > 0) {
+			pages.push({ value: 'abilities', label: 'Abilities' });
+		}
+
+		if (props.heroClass.subclasses.length > 0) {
+			pages.push({ value: 'subclasses', label: 'Subclasses' });
+		}
+
 		return (
 			<>
 				<Segmented
 					style={{ marginBottom: '20px' }}
 					block={true}
-					options={[
-						{ value: 'overview', label: 'Overview' },
-						{ value: 'features', label: 'Features' },
-						{ value: 'abilities', label: 'Abilities' },
-						{ value: 'subclasses', label: 'Subclasses' }
-					]}
+					options={pages}
 					value={page}
 					onChange={setPage}
 					onClick={e => e.stopPropagation()}

@@ -1,4 +1,4 @@
-import { Alert, Button, Divider, Drawer, Flex, Input, Segmented, Select, Space } from 'antd';
+import { Alert, Button, Divider, Drawer, Flex, Segmented, Select, Space } from 'antd';
 import { CopyOutlined, FlagFilled, FlagOutlined, MoonOutlined, SettingOutlined, SunOutlined } from '@ant-design/icons';
 import { AbilityData } from '@/data/ability-data';
 import { Collections } from '@/utils/collections';
@@ -22,6 +22,7 @@ import { PatreonConnectPanel } from '@/components/panels/connection-settings/pat
 import { SelectablePanel } from '@/components/controls/selectable-panel/selectable-panel';
 import { SheetPageSize } from '@/enums/sheet-page-size';
 import { StandardAbilitySelectModal } from '@/components/modals/select/standard-ability-select/standard-ability-select-modal';
+import { TextInput } from '@/components/controls/text-input/text-input';
 import { Toggle } from '@/components/controls/toggle/toggle';
 import { Utils } from '@/utils/utils';
 import { WarehouseActionsPanel } from '@/components/panels/connection-settings/warehouse-actions-panel';
@@ -182,13 +183,6 @@ export const SettingsModal = (props: Props) => {
 			props.setOptions(copy);
 		};
 
-		const setDimUnavailableAbilities = (value: boolean) => {
-			const copy = Utils.copy(options);
-			copy.dimUnavailableAbilities = value;
-			setOptions(copy);
-			props.setOptions(copy);
-		};
-
 		const setShowSources = (value: boolean) => {
 			const copy = Utils.copy(options);
 			copy.showSources = value;
@@ -222,7 +216,6 @@ export const SettingsModal = (props: Props) => {
 				<Space orientation='vertical' style={{ width: '100%' }}>
 					<Toggle label='Separate inventory features' value={options.separateInventoryFeatures} onChange={setSeparateInventoryFeatures} />
 					<Toggle label='Show skills in groups' value={options.showSkillsInGroups} onChange={setShowSkillsInGroups} />
-					<Toggle label='Dim unavailable abilities' value={options.dimUnavailableAbilities} onChange={setDimUnavailableAbilities} />
 					<Toggle label='Show feature / ability sources' value={options.showSources} onChange={setShowSources} />
 					<LabelControl
 						label='Ability card width'
@@ -260,13 +253,6 @@ export const SettingsModal = (props: Props) => {
 			props.setOptions(copy);
 		};
 
-		const setColorSheet = (value: boolean) => {
-			const copy = Utils.copy(options);
-			copy.colorSheet = value;
-			setOptions(copy);
-			props.setOptions(copy);
-		};
-
 		const setShowPowerRollCalculation = (value: boolean) => {
 			const copy = Utils.copy(options);
 			copy.showPowerRollCalculation = value;
@@ -286,7 +272,6 @@ export const SettingsModal = (props: Props) => {
 				<Space orientation='vertical' style={{ width: '100%' }}>
 					<Toggle label='Show play state' value={options.includePlayState} onChange={setIncludePlayState} />
 					<Toggle label='Calculate Power Roll bonuses' value={options.showPowerRollCalculation} onChange={setShowPowerRollCalculation} />
-					<Toggle label='Use color' value={options.colorSheet} onChange={setColorSheet} />
 					<LabelControl
 						label='Show class features'
 						control={
@@ -331,6 +316,20 @@ export const SettingsModal = (props: Props) => {
 		const setPageOrientation = (value: 'portrait' | 'landscape') => {
 			const copy = Utils.copy(options);
 			copy.pageOrientation = value;
+			setOptions(copy);
+			props.setOptions(copy);
+		};
+
+		const setColorSheet = (value: boolean) => {
+			const copy = Utils.copy(options);
+			copy.colorSheet = value;
+			setOptions(copy);
+			props.setOptions(copy);
+		};
+
+		const setColorScheme = (value: 'community' | 'classic') => {
+			const copy = Utils.copy(options);
+			copy.colorScheme = value;
 			setOptions(copy);
 			props.setOptions(copy);
 		};
@@ -396,16 +395,35 @@ export const SettingsModal = (props: Props) => {
 							/>
 						}
 					/>
+					<Toggle label='Use color' value={options.colorSheet} onChange={setColorSheet} />
+					{
+						options.colorSheet &&
+							<LabelControl
+								label='Color scheme'
+								control={
+									<Segmented
+										name='colorScheme'
+										block={true}
+										options={[
+											{ value: 'community', label: 'Community' },
+											{ value: 'classic', label: 'Classic' }
+										]}
+										value={options.colorScheme}
+										onChange={setColorScheme}
+									/>
+								}
+							/>
+					}
 					<LabelControl
-						label='Text color'
+						label='Text contrast'
 						control={
 							<Segmented
 								name='textColor'
 								block={true}
 								options={[
-									{ value: 'dark', label: 'Darker' },
+									{ value: 'dark', label: 'Higher' },
 									{ value: 'default', label: 'Default' },
-									{ value: 'light', label: 'Lighter' }
+									{ value: 'light', label: 'Lower' }
 								]}
 								value={options.sheetTextColor}
 								onChange={changeTextColor}
@@ -599,12 +617,11 @@ export const SettingsModal = (props: Props) => {
 			<Expander title='Feature Flags'>
 				<Space orientation='vertical' style={{ width: '100%' }}>
 					<Flex align='center' justify='space-between' gap={10}>
-						<Input
+						<TextInput
 							placeholder='Enter a feature flag code'
 							allowClear={true}
 							value={flag}
-							onChange={e => {
-								const flag = e.target.value;
+							onChange={flag => {
 								// console.error(`${flag}: ${Utils.hashCode(flag)}`);
 								setFlag(flag);
 							}}

@@ -181,11 +181,6 @@ export class FactoryLogic {
 			name: '',
 			description: '',
 			features: [
-				FactoryLogic.feature.create({
-					id: Utils.guid(),
-					name: 'Signature Trait',
-					description: ''
-				}),
 				FactoryLogic.feature.createChoice({
 					id: Utils.guid(),
 					name: 'Purchased Traits',
@@ -1041,14 +1036,15 @@ export class FactoryLogic {
 
 	static createOptions = (): Options => {
 		return {
+			// App
+			cookieConsent: false,
 			// Hero
 			shownStandardAbilities: [],
 			xpPerLevel: 16,
 			// Hero: Modern Sheet
 			singlePage: false,
 			separateInventoryFeatures: false,
-			showSkillsInGroups: true,
-			dimUnavailableAbilities: true,
+			showSkillsInGroups: false,
 			showSources: true,
 			compactView: false,
 			abilityWidth: PanelWidth.Medium,
@@ -1056,6 +1052,7 @@ export class FactoryLogic {
 			includePlayState: false,
 			classicSheetPageSize: SheetPageSize.Letter,
 			colorSheet: true,
+			colorScheme: 'community',
 			showPowerRollCalculation: true,
 			sheetTextColor: 'default',
 			featuresInclude: 'all',
