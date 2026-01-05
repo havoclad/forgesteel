@@ -21,6 +21,7 @@ export interface RoomSyncState {
 	clientNames: Map<string, string>; // clientId -> name
 	lastDataChange: { key: string; version: number } | null;
 	directorInfo: DirectorInfo | null;
+	authFailed: boolean; // True if WebSocket auth failed (expired/invalid token)
 }
 
 interface ClientName {
@@ -54,8 +55,10 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		heroClaims: new Map(),
 		clientNames: new Map(),
 		lastDataChange: null,
-		directorInfo: null
+		directorInfo: null,
+		authFailed: false
 	});
+	const hadSuccessfulConnectionRef = useRef(false);
 
 	// Callbacks for data change notifications
 	const dataChangeCallbacksRef = useRef<Map<string, () => void>>(new Map());
@@ -70,6 +73,9 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 			wsRef.current.close();
 			wsRef.current = null;
 		}
+
+		// Reset successful connection tracker for this new attempt
+		hadSuccessfulConnectionRef.current = false;
 
 		try {
 			// Convert http:// to ws://
@@ -86,7 +92,8 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 
 			ws.onopen = () => {
 				console.log('Room server WebSocket connected');
-				setState(prev => ({ ...prev, isConnected: true }));
+				hadSuccessfulConnectionRef.current = true;
+				setState(prev => ({ ...prev, isConnected: true, authFailed: false }));
 			};
 
 			ws.onmessage = event => {
@@ -200,12 +207,26 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				}
 			};
 
-			ws.onclose = () => {
-				console.log('Room server WebSocket disconnected');
-				setState(prev => ({ ...prev, isConnected: false }));
+			ws.onclose = event => {
+				console.log('Room server WebSocket disconnected', event.code, event.reason);
 				wsRef.current = null;
 
-				// Attempt to reconnect after 3 seconds
+				// Check if this was an auth failure (never successfully connected with a token)
+				// Close code 1006 is abnormal closure - often happens on auth rejection before upgrade
+				const wasAuthAttempt = !!settings.authToken;
+				const neverConnected = !hadSuccessfulConnectionRef.current;
+				const isAuthFailure = wasAuthAttempt && neverConnected && event.code === 1006;
+
+				if (isAuthFailure) {
+					console.warn('WebSocket auth failed - token may be expired');
+					setState(prev => ({ ...prev, isConnected: false, authFailed: true }));
+					// Don't auto-reconnect with same (expired) token
+					return;
+				}
+
+				setState(prev => ({ ...prev, isConnected: false }));
+
+				// Attempt to reconnect after 3 seconds for normal disconnects
 				if (settings.useRoomServer && settings.clientId) {
 					reconnectTimeoutRef.current = setTimeout(() => {
 						connectRef.current();
@@ -244,8 +265,10 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				heroClaims: new Map(),
 				clientNames: new Map(),
 				lastDataChange: null,
-				directorInfo: null
+				directorInfo: null,
+				authFailed: false
 			});
+			hadSuccessfulConnectionRef.current = false;
 		}
 
 		return () => {

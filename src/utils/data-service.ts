@@ -225,9 +225,15 @@ export class DataService {
 			});
 			return true;
 		} catch (error) {
-			if (error instanceof AxiosError && error.response?.status === 409) {
-				// Already claimed by someone else
-				return false;
+			if (error instanceof AxiosError) {
+				if (error.response?.status === 409) {
+					// Already claimed by someone else
+					return false;
+				}
+				if (error.response?.status === 401 && error.response?.data?.code === 'TOKEN_EXPIRED') {
+					// Token expired - throw specific error
+					throw new Error('Session expired. Please sign in again.', { cause: error });
+				}
 			}
 			console.error('Error claiming hero', error);
 			throw new Error(this.getRoomErrorMessage(error), { cause: error });
@@ -245,6 +251,12 @@ export class DataService {
 			});
 			return response.data.success;
 		} catch (error) {
+			if (error instanceof AxiosError) {
+				if (error.response?.status === 401 && error.response?.data?.code === 'TOKEN_EXPIRED') {
+					// Token expired - throw specific error
+					throw new Error('Session expired. Please sign in again.', { cause: error });
+				}
+			}
 			console.error('Error releasing hero claim', error);
 			throw new Error(this.getRoomErrorMessage(error), { cause: error });
 		}

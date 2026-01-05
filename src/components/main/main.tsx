@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Sourcebook, SourcebookElementKind } from '@/models/sourcebook';
 import { Spin, notification } from 'antd';
 import { Ability } from '@/models/ability';
@@ -150,6 +150,25 @@ export const Main = (props: Props) => {
 
 		return unsubscribe;
 	}, [ connectionSettings.useRoomServer, roomSync, props.dataService ]);
+
+	// Show warning notification when room server auth fails
+	const authFailedNotificationShown = useRef(false);
+	useEffect(() => {
+		if (roomSync.authFailed && !authFailedNotificationShown.current) {
+			authFailedNotificationShown.current = true;
+			notify.warning({
+				message: 'Session Expired',
+				description: 'Your Discord session has expired. Please sign out and sign in again from Settings to reconnect.',
+				duration: 0, // Don't auto-close
+				key: 'auth-failed',
+				placement: 'top'
+			});
+		} else if (!roomSync.authFailed && authFailedNotificationShown.current) {
+			// Clear the notification if auth is restored
+			authFailedNotificationShown.current = false;
+			notification.destroy('auth-failed');
+		}
+	}, [ roomSync.authFailed, notify ]);
 
 	// #region Persistence
 

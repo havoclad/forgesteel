@@ -64,17 +64,26 @@ app.get('/health', (_req, res) => {
 });
 
 // Helper to get client ID from either Bearer token or x-client-id header
-function getClientId(req: Request): string | null {
+interface ClientIdResult {
+	clientId: string | null;
+	error?: 'expired' | 'invalid' | 'missing';
+}
+
+function getClientId(req: Request): ClientIdResult {
 	const authHeader = req.headers.authorization;
 	if (authHeader?.startsWith('Bearer ')) {
 		try {
 			const user = verifySessionToken(authHeader.slice(7));
-			return user.id;
-		} catch {
-			return null;
+			return { clientId: user.id };
+		} catch (err) {
+			// Check if it's an expiration error
+			const isExpired = err instanceof Error &&
+				(err.message.includes('expired') || err.name === 'TokenExpiredError');
+			return { clientId: null, error: isExpired ? 'expired' : 'invalid' };
 		}
 	}
-	return req.headers['x-client-id'] as string || null;
+	const clientId = req.headers['x-client-id'] as string || null;
+	return clientId ? { clientId } : { clientId: null, error: 'missing' };
 }
 
 // Auth middleware - extracts user from Bearer token
@@ -263,10 +272,14 @@ app.get('/claims', (_req, res) => {
 // Claim a hero
 app.post('/heroes/:heroId/claim', (req, res) => {
 	const { heroId } = req.params;
-	const clientId = getClientId(req);
+	const { clientId, error } = getClientId(req);
 
 	if (!clientId) {
-		res.status(400).json({ error: 'Missing authentication' });
+		if (error === 'expired') {
+			res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+		} else {
+			res.status(400).json({ error: 'Missing authentication' });
+		}
 		return;
 	}
 
@@ -288,10 +301,14 @@ app.post('/heroes/:heroId/claim', (req, res) => {
 // Release a hero claim
 app.delete('/heroes/:heroId/claim', (req, res) => {
 	const { heroId } = req.params;
-	const clientId = getClientId(req);
+	const { clientId, error } = getClientId(req);
 
 	if (!clientId) {
-		res.status(400).json({ error: 'Missing authentication' });
+		if (error === 'expired') {
+			res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+		} else {
+			res.status(400).json({ error: 'Missing authentication' });
+		}
 		return;
 	}
 
@@ -312,7 +329,17 @@ app.delete('/heroes/:heroId/claim', (req, res) => {
 
 // Reset room (DM only)
 app.post('/reset', (req, res) => {
-	const clientId = getClientId(req);
+	const { clientId, error } = getClientId(req);
+
+	if (!clientId) {
+		if (error === 'expired') {
+			res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+		} else {
+			res.status(400).json({ error: 'Missing authentication' });
+		}
+		return;
+	}
+
 	const dmClientId = database.getDmClientId();
 
 	if (clientId !== dmClientId) {
@@ -440,7 +467,7 @@ server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) =>
 	// If auth is configured, require token
 	if (isAuthConfigured()) {
 		if (!token) {
-			socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+			socket.write('HTTP/1.1 401 Unauthorized\r\nX-Auth-Error: missing\r\n\r\n');
 			socket.destroy();
 			return;
 		}
@@ -448,8 +475,12 @@ server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) =>
 		try {
 			const user = verifySessionToken(token);
 			(request as any).user = user;
-		} catch {
-			socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+		} catch (err) {
+			// Return specific error for expired vs invalid token
+			const isExpired = err instanceof Error &&
+				(err.message.includes('expired') || err.name === 'TokenExpiredError');
+			const errorHeader = isExpired ? 'X-Auth-Error: expired' : 'X-Auth-Error: invalid';
+			socket.write(`HTTP/1.1 401 Unauthorized\r\n${errorHeader}\r\n\r\n`);
 			socket.destroy();
 			return;
 		}

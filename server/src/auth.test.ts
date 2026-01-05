@@ -13,14 +13,14 @@ describe('Authentication', () => {
 		it('should create and verify a valid JWT token', async () => {
 			process.env.JWT_SECRET = 'test-secret';
 			const mod = await import('./auth.js');
-			
+
 			const user = {
 				id: 'user-123',
 				username: 'testuser',
 				displayName: 'Test User',
 				avatar: 'avatar-url'
 			};
-			
+
 			const token = mod.createSessionToken(user);
 			expect(token).toBeTruthy();
 			expect(typeof token).toBe('string');
@@ -37,10 +37,35 @@ describe('Authentication', () => {
 		it('should throw error for invalid token', async () => {
 			process.env.JWT_SECRET = 'test-secret';
 			const mod = await import('./auth.js');
-			
+
 			expect(() => {
 				mod.verifySessionToken('invalid-token');
 			}).toThrow();
+		});
+
+		it('should throw error with "expired" message for expired token', async () => {
+			process.env.JWT_SECRET = 'test-secret';
+
+			// Create an expired token manually using jwt.sign with negative expiresIn
+			const user = {
+				id: 'user-123',
+				username: 'testuser',
+				displayName: 'Test User',
+				avatar: 'avatar-url'
+			};
+
+			// Create a token that expired 1 hour ago
+			const expiredToken = jwt.sign(user, 'test-secret', { expiresIn: '-1h' });
+
+			const mod = await import('./auth.js');
+
+			try {
+				mod.verifySessionToken(expiredToken);
+				expect.fail('Should have thrown an error');
+			} catch (err) {
+				expect(err instanceof Error).toBe(true);
+				expect((err as Error).message).toContain('expired');
+			}
 		});
 
 		it('should verify token structure', async () => {
