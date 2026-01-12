@@ -282,7 +282,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 		};
 	}, [ settings.useRoomServer, settings.clientId, connect ]);
 
-	// Keepalive ping every 30 seconds
+	// Keepalive ping every 15 seconds (reduced from 30s for better resilience on flaky connections)
 	useEffect(() => {
 		if (!state.isConnected) return;
 
@@ -290,7 +290,7 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 			if (wsRef.current?.readyState === WebSocket.OPEN) {
 				wsRef.current.send(JSON.stringify({ type: 'ping' }));
 			}
-		}, 30000);
+		}, 15000);
 
 		return () => clearInterval(interval);
 	}, [ state.isConnected ]);
