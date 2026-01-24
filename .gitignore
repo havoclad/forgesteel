@@ -6,7 +6,6 @@ node_modules
 .vscode/
 .vscode/*
 .claude/
-CLAUDE.md
 .env
 *.env.local
 docker-dist/
