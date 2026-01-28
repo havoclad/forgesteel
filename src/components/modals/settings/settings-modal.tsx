@@ -98,12 +98,14 @@ export const SettingsModal = (props: Props) => {
 		const setXPPerLevel = (value: number) => {
 			const copy = Utils.copy(options);
 			copy.xpPerLevel = value;
+			setOptions(copy);
 			props.setOptions(copy);
 		};
 
 		const setShownStandardAbilities = (value: string | string[]) => {
 			const copy = Utils.copy(options);
 			copy.shownStandardAbilities = [ value ].flat(1);
+			setOptions(copy);
 			props.setOptions(copy);
 		};
 
@@ -370,6 +372,13 @@ export const SettingsModal = (props: Props) => {
 			props.setOptions(copy);
 		};
 
+		const setDebugClassicSheet = (value: boolean) => {
+			const copy = Utils.copy(options);
+			copy.debugClassicSheet = value;
+			setOptions(copy);
+			props.setOptions(copy);
+		};
+
 		return (
 			<Expander title='Classic View'>
 				<Space orientation='vertical' style={{ width: '100%' }}>
@@ -435,6 +444,7 @@ export const SettingsModal = (props: Props) => {
 							/>
 						}
 					/>
+					<Toggle label='Debug classic sheet' value={options.debugClassicSheet} onChange={setDebugClassicSheet} />
 				</Space>
 			</Expander>
 		);

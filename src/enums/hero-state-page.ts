@@ -1,7 +1,7 @@
 export enum HeroStatePage {
-	Hero = 'Hero',
+	Resources = 'Resources',
 	Vitals = 'Vitals',
 	Inventory = 'Inventory',
 	Projects = 'Projects',
-	Customize = 'Customize'
+	Titles = 'Titles'
 }

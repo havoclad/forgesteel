@@ -115,6 +115,7 @@ export class FactoryLogic {
 			conditions: [],
 			inventory: [],
 			projects: [],
+			titles: [],
 			controlledSlots: [],
 			notes: '',
 			encounterState: 'ready',
@@ -1057,6 +1058,7 @@ export class FactoryLogic {
 			sheetTextColor: 'default',
 			featuresInclude: 'all',
 			pageOrientation: 'portrait',
+			debugClassicSheet: false,
 			// Monster Builder
 			similarLevel: true,
 			similarRole: true,
