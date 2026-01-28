@@ -84,8 +84,13 @@ export const AuthCallbackPage = (props: Props) => {
 					role
 				};
 
+				console.log('Auth callback: token received, length:', token.length);
+				console.log('Auth callback: persisting settings...');
+
 				// Wait for settings to persist before navigating
 				await props.setConnectionSettings(newSettings);
+
+				console.log('Auth callback: settings persisted, navigating to home');
 
 				// Redirect to home page
 				navigate('/', { replace: true });

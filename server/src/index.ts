@@ -467,6 +467,7 @@ server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) =>
 	// If auth is configured, require token
 	if (isAuthConfigured()) {
 		if (!token) {
+			console.warn('WebSocket auth rejected: missing token');
 			socket.write('HTTP/1.1 401 Unauthorized\r\nX-Auth-Error: missing\r\n\r\n');
 			socket.destroy();
 			return;
@@ -480,6 +481,8 @@ server.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) =>
 			const isExpired = err instanceof Error &&
 				(err.message.includes('expired') || err.name === 'TokenExpiredError');
 			const errorHeader = isExpired ? 'X-Auth-Error: expired' : 'X-Auth-Error: invalid';
+			const errMsg = err instanceof Error ? err.message : 'Unknown error';
+			console.warn(`WebSocket auth rejected: ${isExpired ? 'expired' : 'invalid'} token - ${errMsg}`);
 			socket.write(`HTTP/1.1 401 Unauthorized\r\n${errorHeader}\r\n\r\n`);
 			socket.destroy();
 			return;

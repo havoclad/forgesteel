@@ -84,9 +84,12 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				.replace(/^https:\/\//, 'wss://');
 
 			// Use auth token if available, otherwise fall back to clientId
-			const wsUrl = settings.authToken
+			const hasToken = !!settings.authToken;
+			const wsUrl = hasToken
 				? `${wsHost}/ws?token=${settings.authToken}`
 				: `${wsHost}/ws?clientId=${settings.clientId}`;
+
+			console.log(`WebSocket connecting: hasToken=${hasToken}, tokenLength=${settings.authToken?.length ?? 0}`);
 
 			const ws = new WebSocket(wsUrl);
 
@@ -217,8 +220,10 @@ export const useRoomSync = (settings: ConnectionSettings) => {
 				const neverConnected = !hadSuccessfulConnectionRef.current;
 				const isAuthFailure = wasAuthAttempt && neverConnected && event.code === 1006;
 
+				console.log(`WebSocket close analysis: wasAuthAttempt=${wasAuthAttempt}, neverConnected=${neverConnected}, code=${event.code}, isAuthFailure=${isAuthFailure}`);
+
 				if (isAuthFailure) {
-					console.warn('WebSocket auth failed - token may be expired');
+					console.warn('WebSocket auth failed - token may be expired or invalid');
 					setState(prev => ({ ...prev, isConnected: false, authFailed: true }));
 					// Don't auto-reconnect with same (expired) token
 					return;

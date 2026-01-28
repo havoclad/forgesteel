@@ -26,7 +26,7 @@ import { TextInput } from '@/components/controls/text-input/text-input';
 import { Toggle } from '@/components/controls/toggle/toggle';
 import { Utils } from '@/utils/utils';
 import { WarehouseActionsPanel } from '@/components/panels/connection-settings/warehouse-actions-panel';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 
 import './settings-modal.scss';
@@ -62,6 +62,11 @@ export const SettingsModal = (props: Props) => {
 
 	const [ connectionSettings, setConnectionSettings ] = useState<ConnectionSettings>(props.connectionSettings);
 	const [ reloadNeeded, setReloadNeeded ] = useState<boolean>(false);
+
+	// Sync local state when auth-related props change (e.g., after OAuth callback)
+	useEffect(() => {
+		setConnectionSettings(props.connectionSettings);
+	}, [ props.connectionSettings.authToken, props.connectionSettings.authenticatedUser?.id ]);
 
 	const updateConnectionSettings = (value: ConnectionSettings) => {
 		const copy = Utils.copy(value);

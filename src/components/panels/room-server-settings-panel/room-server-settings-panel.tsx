@@ -135,8 +135,9 @@ export const RoomServerSettingsPanel = (props: Props) => {
 				const { url } = await authUrlResponse.json();
 
 				// Save current settings before redirect (so callback knows the server host)
+				// Must await to ensure IndexedDB write completes before navigation
 				const normalizedSettings = getSettingsWithNormalizedHost();
-				props.setConnectionSettings(normalizedSettings);
+				await props.setConnectionSettings(normalizedSettings);
 
 				// Redirect to Discord OAuth
 				window.location.href = url;
