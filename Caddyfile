@@ -1,4 +1,4 @@
-{$DOMAIN:localhost} {
+:80 {
 	# Redirect root to /forgesteel/
 	redir / /forgesteel/ permanent
 
